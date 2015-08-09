@@ -30,13 +30,19 @@ isConcreteType ty =
           isConcreteType l
       ListT -> True
 
+conCompiler :: String -> String
+conCompiler s =
+    case s of
+      "Double" -> "Float"
+      _ -> s
+
 compileType :: Type -> Q Exp
 compileType ty =
     case ty of
       ListT -> [|ETyCon (ETCon "List")|]
       TupleT i -> [|ETyTuple i|]
       ConT name ->
-          let n = nameBase name
+          let n = conCompiler $ nameBase name
           in [|ETyCon (ETCon n)|]
       VarT name ->
           let n = nameBase name
