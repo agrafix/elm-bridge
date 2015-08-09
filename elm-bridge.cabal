@@ -2,7 +2,7 @@ name:                elm-bridge
 version:             0.1.0.0
 synopsis:            Derive Elm types from Haskell types
 description:         Building the bridge from Haskell to Elm and back. Define types once,
-                     use on both sides and enjoy free (de)serialisation. Cheers!
+                     use on both sides and enjoy easy (de)serialisation. Cheers!
 homepage:            http://github.com/agrafix/derive-elm
 license:             BSD3
 license-file:        LICENSE
