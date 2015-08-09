@@ -63,7 +63,7 @@ jsonEncFoo  val =
    ]
 ```
 
-For more usage examples check the tests.
+For more usage examples check the tests or the examples dir.
 
 ## Install
 
