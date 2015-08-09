@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Elm.Derive
     ( deriveElmDef, defaultOpts, DeriveOpts(..) )
@@ -5,6 +6,7 @@ where
 
 import Elm.TyRep
 
+import Control.Monad
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 
@@ -20,6 +22,13 @@ defaultOpts =
     { do_fieldModifier = id
     , do_constrModifier = id
     }
+
+isConcreteType :: Type -> Bool
+isConcreteType ty =
+    case ty of
+      AppT l r ->
+          isConcreteType l
+      ListT -> True
 
 compileType :: Type -> Q Exp
 compileType ty =
@@ -41,15 +50,18 @@ compileType ty =
       _ -> fail $ "Unsupported type: " ++ show ty
 
 
-runDerive :: Name -> [TyVarBndr] -> (Q Exp -> Q Exp) -> Q Dec
+runDerive :: Name -> [TyVarBndr] -> (Q Exp -> Q Exp) -> Q [Dec]
 runDerive name vars mkBody =
-    instanceD (cxt [])
+    liftM (:[]) elmDefInst
+    where
+      elmDefInst =
+          instanceD (cxt [])
               (classType `appT` instanceType)
               [ funD 'compileElmDef
                          [ clause [ return WildP ] (normalB body) []
                          ]
               ]
-    where
+
       classType = conT ''IsElmDefinition
       instanceType = foldl appT (conT name) $ map varT argNames
 
@@ -69,7 +81,7 @@ runDerive name vars mkBody =
                 PlainTV tv -> tv
                 KindedTV tv _ -> tv
 
-deriveAlias :: DeriveOpts -> Name -> [TyVarBndr] -> Con -> Q Dec
+deriveAlias :: DeriveOpts -> Name -> [TyVarBndr] -> Con -> Q [Dec]
 deriveAlias opts name vars c =
     case c of
       RecC _ conFields ->
@@ -86,7 +98,7 @@ deriveAlias opts name vars c =
             fldName = do_fieldModifier opts $ nameBase fname
             fldType = compileType ftype
 
-deriveSum :: DeriveOpts -> Name -> [TyVarBndr] -> [Con] -> Q Dec
+deriveSum :: DeriveOpts -> Name -> [TyVarBndr] -> [Con] -> Q [Dec]
 deriveSum opts name vars constrs =
     runDerive name vars $ \typeName ->
         [|ETypeSum (ESum $typeName $sumOpts)|]
@@ -103,7 +115,7 @@ deriveSum opts name vars constrs =
             _ ->
                 fail "Can only derive sum types with options like C Int a"
 
-deriveSynonym :: DeriveOpts -> Name -> [TyVarBndr] -> Type -> Q Dec
+deriveSynonym :: DeriveOpts -> Name -> [TyVarBndr] -> Type -> Q [Dec]
 deriveSynonym opts name vars otherT =
     runDerive name vars $ \typeName ->
         [|ETypePrimAlias (EPrimAlias $typeName $otherType)|]
@@ -112,11 +124,6 @@ deriveSynonym opts name vars otherT =
 
 deriveElmDef :: DeriveOpts -> Name -> Q [Dec]
 deriveElmDef opts name =
-    do r <- deriveElmDef' opts name
-       return [r]
-
-deriveElmDef' :: DeriveOpts -> Name -> Q Dec
-deriveElmDef' opts name =
     do TyConI tyCon <- reify name
        case tyCon of
          DataD _ _ tyVars constrs _ ->
