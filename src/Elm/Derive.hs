@@ -34,6 +34,8 @@ conCompiler :: String -> String
 conCompiler s =
     case s of
       "Double" -> "Float"
+      "Text" -> "String"
+      "Vector" -> "List"
       _ -> s
 
 compileType :: Type -> Q Exp

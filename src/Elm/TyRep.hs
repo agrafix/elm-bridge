@@ -64,3 +64,16 @@ unpackTupleType t =
                    Nothing ->
                        Nothing
             ) (Just t)
+
+unpackToplevelConstr :: EType -> [EType]
+unpackToplevelConstr t =
+    reverse $
+    flip unfoldr (Just t) $ \mT ->
+        case mT of
+          Nothing -> Nothing
+          Just t' ->
+              case t' of
+                ETyApp l r ->
+                    Just (r, Just l)
+                _ ->
+                    Just (t', Nothing)

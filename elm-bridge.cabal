@@ -18,7 +18,12 @@ extra-source-files:
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Elm.Derive, Elm.TyRep, Elm.TyRender
+  exposed-modules:
+                       Elm.Derive
+                       Elm.Json
+                       Elm.Module
+                       Elm.TyRender
+                       Elm.TyRep
   build-depends:       base >= 4.7 && < 5,
                        template-haskell
   default-language:    Haskell2010
@@ -30,7 +35,9 @@ test-suite derive-elm-tests
   other-modules:
                        Elm.DeriveSpec
                        Elm.TyRenderSpec
+                       Elm.JsonSpec
                        Elm.TestHelpers
+                       Elm.ModuleSpec
   build-depends:
                        base,
                        hspec >= 2.0,
