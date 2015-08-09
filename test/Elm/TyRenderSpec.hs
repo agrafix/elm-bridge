@@ -33,10 +33,10 @@ $(deriveElmDef (fieldDropOpts 2) ''Bar)
 $(deriveElmDef defaultOpts ''SomeOpts)
 
 fooCode :: String
-fooCode = "type alias Foo  = \n   { name: String\n,    blablub: Int\n   }\n"
+fooCode = "type alias Foo  = \n   { name: String\n   , blablub: Int\n   }\n"
 
 barCode :: String
-barCode = "type alias Bar a = \n   { name: a\n,    blablub: Int\n,    tuple: (Int, String)\n,    list: (List Bool)\n   }\n"
+barCode = "type alias Bar a = \n   { name: a\n   , blablub: Int\n   , tuple: (Int, String)\n   , list: (List Bool)\n   }\n"
 
 someOptsCode :: String
 someOptsCode = "type SomeOpts a = \n    Okay Int\n    | NotOkay a\n"

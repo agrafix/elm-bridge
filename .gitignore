@@ -10,3 +10,5 @@ cabal-dev
 cabal.sandbox.config
 *~
 .stack-work
+*.dyn_o
+*.dyn_hi

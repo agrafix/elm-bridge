@@ -1,3 +1,7 @@
+{- |
+This module implements a generator for JSON serialisers and parsers of arbitrary elm types.
+Please note: It's still very hacky and might not work for all possible elm types yet.
+-}
 module Elm.Json
     ( jsonParserForDef
     , jsonSerForDef
@@ -9,6 +13,7 @@ import Data.Maybe
 
 import Elm.TyRep
 
+-- | Compile a JSON parser for an Elm type
 jsonParserForType :: EType -> String
 jsonParserForType ty =
     case ty of
@@ -39,6 +44,7 @@ jsonParserForType ty =
                 in "Json.Decode.tuple" ++ show tupleLen ++ " (" ++ commas ++ ") "
                     ++ unwords (map (\t' -> "(" ++ jsonParserForType t' ++ ")") xs)
 
+-- | Compile a JSON parser for an Elm type definition
 jsonParserForDef :: ETypeDef -> String
 jsonParserForDef etd =
     case etd of
@@ -66,7 +72,7 @@ jsonParserForDef etd =
            "jsonDec" ++ et_name name ++ " "
            ++ unwords (map (\tv -> "localDecoder_" ++ tv_name tv) $ et_args name)
 
-
+-- | Compile a JSON serializer for an Elm type
 jsonSerForType :: EType -> String
 jsonSerForType ty =
     case ty of
@@ -98,7 +104,7 @@ jsonSerForType ty =
                         unwords $ map (\(_, v) -> "v" ++ show v) tupleArgsV
                 in "(\\" ++ tupleArgs ++ " -> [" ++  intercalate "," (map (\(t', idx) -> "(" ++ jsonSerForType t' ++ ") v" ++ show idx) tupleArgsV) ++ "]"
 
-
+-- | Compile a JSON serializer for an Elm type definition
 jsonSerForDef :: ETypeDef -> String
 jsonSerForDef etd =
     case etd of

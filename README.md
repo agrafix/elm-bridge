@@ -9,8 +9,6 @@ Elm Bridge
 
 Hackage: [elm-bridge](http://hackage.haskell.org/package/elm-bridge)
 
- **WARNING: Work in progress!**
-
 Building the bridge from [Haskell](http://haskell.org) to [Elm](http://elm-lang.org) and back. Define types once, use on both sides and enjoy easy (de)serialisation. Cheers!
 
 ## Usage
@@ -18,8 +16,7 @@ Building the bridge from [Haskell](http://haskell.org) to [Elm](http://elm-lang.
 ```haskell
 {-# LANGUAGE TemplateHaskell #-}
 import Elm.Derive
-import Elm.TyRender
-import Elm.TyRep
+import Elm.Module
 
 import Data.Proxy
 
@@ -29,18 +26,41 @@ data Foo
    , f_blablub :: Int
    } deriving (Show, Eq)
 
+deriveElmDef defaultOpts ''Foo
+
 main :: IO ()
 main =
-    putStrLn $ renderElm $ compileElmDef (Proxy :: Proxy Foo)
+    putStrLn $ makeElmModule "Foo"
+    [ DefineElm (Proxy :: Proxy Foo)
+    ]
+
 ```
 
 Output will be:
 
 ```elm
-type alias Foo =
-	{ f_name: String
-	, f_blablub: Int
-	}
+module Foo where
+
+import Json.Decode
+import Json.Decode exposing ((:=))
+import Json.Encode
+
+
+type alias Foo  =
+   { f_name: String
+   , f_blablub: Int
+   }
+
+jsonDecFoo  =
+   ("f_name" := Json.Decode.string) `Json.Decode.andThen` \pf_name ->
+   ("f_blablub" := Json.Decode.int) `Json.Decode.andThen` \pf_blablub ->
+   Json.Decode.succeed {f_name = pf_name, f_blablub = pf_blablub}
+
+jsonEncFoo  val =
+   Json.Encode.object
+   [ ("f_name", Json.Encode.string val.f_name)
+   , ("f_blablub", Json.Encode.int val.f_blablub)
+   ]
 ```
 
 For more usage examples check the tests.
@@ -49,7 +69,3 @@ For more usage examples check the tests.
 
 * Using cabal: `cabal install elm-bridge`
 * From Source: `git clone https://github.com/agrafix/elm-bridge.git && cd elm-bridge && cabal install`
-
-## Todo
-
-* Generate Elm JSON Serializer/Parser

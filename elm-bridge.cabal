@@ -15,6 +15,7 @@ cabal-version:       >=1.10
 
 extra-source-files:
     README.md
+    examples/*.hs
 
 library
   hs-source-dirs:      src

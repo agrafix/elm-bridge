@@ -40,7 +40,7 @@ instance ElmRenderable ETypeName where
 instance ElmRenderable EAlias where
     renderElm alias =
         "type alias " ++ renderElm (ea_name alias) ++ " = \n   { "
-        ++ intercalate "\n,    " (map (\(fld, ty) -> fld ++ ": " ++ renderElm ty) (ea_fields alias))
+        ++ intercalate "\n   , " (map (\(fld, ty) -> fld ++ ": " ++ renderElm ty) (ea_fields alias))
         ++ "\n   }\n"
 
 instance ElmRenderable ESum where
