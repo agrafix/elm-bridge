@@ -1,5 +1,6 @@
 name:                elm-bridge
-version:             0.1.0.0
+version:             0.2.1
+x-revision: 1
 synopsis:            Derive Elm types from Haskell types
 description:         Building the bridge from Haskell to Elm and back. Define types once,
                      use on both sides and enjoy easy (de)serialisation. Cheers!
@@ -17,16 +18,34 @@ extra-source-files:
     README.md
     examples/*.hs
 
+
 library
   hs-source-dirs:      src
+  ghc-options:         -Wall
   exposed-modules:
                        Elm.Derive
                        Elm.Json
                        Elm.Module
                        Elm.TyRender
                        Elm.TyRep
+  other-modules:       Elm.Utils
   build-depends:       base >= 4.7 && < 5,
-                       template-haskell
+                       template-haskell,
+-- There is a known bug in aeson 0.10.0.0 that is triggered by the derivation
+-- function in some cases: https://github.com/bos/aeson/issues/293
+                       aeson  == 0.9.*
+  default-language:    Haskell2010
+
+test-suite end-to-end-tests
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             EndToEnd.hs
+  build-depends:       base,
+                       elm-bridge,
+                       aeson,
+                       containers,
+                       QuickCheck,
+                       text
   default-language:    Haskell2010
 
 test-suite derive-elm-tests
@@ -42,7 +61,9 @@ test-suite derive-elm-tests
   build-depends:
                        base,
                        hspec >= 2.0,
-                       elm-bridge
+                       elm-bridge,
+                       aeson,
+                       containers
   default-language:    Haskell2010
 
 source-repository head

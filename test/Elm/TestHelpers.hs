@@ -2,8 +2,8 @@ module Elm.TestHelpers where
 
 import Elm.Derive
 
-fieldDropOpts :: Int -> DeriveOpts
+fieldDropOpts :: Int -> Options
 fieldDropOpts i =
-    defaultOpts
-    { do_fieldModifier = drop i
+    defaultOptions
+    { fieldLabelModifier = drop i
     }
