@@ -212,7 +212,7 @@ jsonSerForDef etd =
               argList a = unwords $ map (\i -> "v" ++ show i ) [1 .. length a]
               numargs :: (a -> String) -> [a] -> String
               numargs f = intercalate ", " . zipWith (\n a -> f a ++ " v" ++ show n)  ([1..] :: [Int])
-              mkEncodeObject args = "EObject [" ++ intercalate ", " (map (\(n,t) -> "(" ++ show n ++ ", " ++ jsonSerForType t ++ " vs." ++ n ++ ")") args) ++ "]"
+              mkEncodeObject args = "EObject [" ++ intercalate ", " (map (\(n,t) -> "(" ++ show n ++ ", " ++ jsonSerForType t ++ " vs." ++ fixReserved n ++ ")") args) ++ "]"
               mkEncodeList [arg] = "EValue (" ++ jsonSerForType arg ++ " v1)"
               mkEncodeList args =  "EValue (Json.Encode.list [" ++ numargs jsonSerForType args ++ "])"
     where
