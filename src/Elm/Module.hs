@@ -15,13 +15,18 @@ data DefineElm
 
 -- | Compile an Elm module
 makeElmModule :: String -> [DefineElm] -> String
-makeElmModule moduleName defs =
-    "module " ++ moduleName ++ " where \n\n"
-    ++ "import Json.Decode\n"
-    ++ "import Json.Decode exposing ((:=))\n"
-    ++ "import Json.Encode\n"
-    ++ "\n\n"
-    ++ intercalate "\n\n" (map mkDef defs)
+makeElmModule moduleName defs = unlines (
+    [ "module " ++ moduleName ++ " where"
+    , ""
+    , "import Json.Decode"
+    , "import Json.Decode exposing ((:=))"
+    , "import Json.Encode"
+    , ""
+    , ""
+    ]) ++ makeModuleContent defs
+
+makeModuleContent :: [DefineElm] -> String
+makeModuleContent = intercalate "\n\n" . map mkDef
     where
       mkDef (DefineElm proxy) =
           let def = compileElmDef proxy

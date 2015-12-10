@@ -1,34 +1,29 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 module Elm.Derive
-    ( deriveElmDef, defaultOpts, DeriveOpts(..) )
+    ( deriveElmDef, deriveBoth, defaultOptions, defaultOptionsDropLower, Options(..) )
 where
 
 import Elm.TyRep
 
 import Control.Monad
+import Data.Aeson.TH (Options(..), deriveJSON, SumEncoding(..))
+import qualified Data.Aeson.TH as A
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
+import Data.Char (toLower)
+import Control.Applicative
+import Prelude
 
-data DeriveOpts
-   = DeriveOpts
-   { do_fieldModifier :: String -> String
-   , do_constrModifier :: String -> String
-   }
+defaultOptions :: Options
+defaultOptions = A.defaultOptions { sumEncoding = ObjectWithSingleField, allNullaryToStringTag = True, omitNothingFields = False }
 
-defaultOpts :: DeriveOpts
-defaultOpts =
-    DeriveOpts
-    { do_fieldModifier = id
-    , do_constrModifier = id
-    }
-
-isConcreteType :: Type -> Bool
-isConcreteType ty =
-    case ty of
-      AppT l r ->
-          isConcreteType l
-      ListT -> True
+defaultOptionsDropLower :: Int -> Options
+defaultOptionsDropLower n = defaultOptions { fieldLabelModifier = lower . drop n }
+    where
+        lower "" = ""
+        lower (x:xs) = toLower x : xs
 
 conCompiler :: String -> String
 conCompiler s =
@@ -43,20 +38,23 @@ compileType ty =
     case ty of
       ListT -> [|ETyCon (ETCon "List")|]
       TupleT i -> [|ETyTuple i|]
-      ConT name ->
-          let n = conCompiler $ nameBase name
-          in [|ETyCon (ETCon n)|]
       VarT name ->
           let n = nameBase name
           in [|ETyVar (ETVar n)|]
-      SigT ty _ ->
-          compileType ty
-      AppT a b ->
-          let a1 = compileType a
-              b1 = compileType b
-          in [|ETyApp $a1 $b1|]
+      SigT ty' _ ->
+          compileType ty'
+      AppT a b -> [|ETyApp $(compileType a) $(compileType b)|]
+      ConT name ->
+          let n = conCompiler $ nameBase name
+          in  [|ETyCon (ETCon n)|]
       _ -> fail $ "Unsupported type: " ++ show ty
 
+optSumType :: SumEncoding -> Q Exp
+optSumType se =
+    case se of
+        TwoElemArray -> [|SumEncoding' TwoElemArray|]
+        ObjectWithSingleField -> [|SumEncoding' ObjectWithSingleField|]
+        TaggedObject tn cn -> [|SumEncoding' (TaggedObject tn cn)|]
 
 runDerive :: Name -> [TyVarBndr] -> (Q Exp -> Q Exp) -> Q [Dec]
 runDerive name vars mkBody =
@@ -89,48 +87,58 @@ runDerive name vars mkBody =
                 PlainTV tv -> tv
                 KindedTV tv _ -> tv
 
-deriveAlias :: DeriveOpts -> Name -> [TyVarBndr] -> Con -> Q [Dec]
+deriveAlias :: Options -> Name -> [TyVarBndr] -> Con -> Q [Dec]
 deriveAlias opts name vars c =
     case c of
       RecC _ conFields ->
           let fields = listE $ map mkField conFields
+              omitNothing = omitNothingFields opts
           in runDerive name vars $ \typeName ->
-                [|ETypeAlias (EAlias $typeName $fields)|]
-      _ ->
-          fail "Can only derive records like C { v :: Int, w :: a }"
+                [|ETypeAlias (EAlias $typeName $fields omitNothing)|]
+      _ -> fail "Can only derive records like CC { v :: Int, w :: a }"
     where
       mkField :: VarStrictType -> Q Exp
       mkField (fname, _, ftype) =
           [|(fldName, $fldType)|]
           where
-            fldName = do_fieldModifier opts $ nameBase fname
+            fldName = fieldLabelModifier opts $ nameBase fname
             fldType = compileType ftype
 
-deriveSum :: DeriveOpts -> Name -> [TyVarBndr] -> [Con] -> Q [Dec]
+deriveSum :: Options -> Name -> [TyVarBndr] -> [Con] -> Q [Dec]
 deriveSum opts name vars constrs =
     runDerive name vars $ \typeName ->
-        [|ETypeSum (ESum $typeName $sumOpts)|]
+        [|ETypeSum (ESum $typeName $sumOpts $sumEncOpts omitNothing allNullary)|]
     where
-      sumOpts =
-          listE $ map mkOpt constrs
+      allNullary = allNullaryToStringTag opts
+      sumEncOpts = optSumType (sumEncoding opts)
+      omitNothing = omitNothingFields opts
+      sumOpts = listE $ map mkOpt constrs
       mkOpt :: Con -> Q Exp
       mkOpt c =
-          case c of
-            NormalC name args ->
-                let n = do_constrModifier opts $ nameBase name
+        let modifyName = constructorTagModifier opts . nameBase
+        in case c of
+            NormalC name' args ->
+                let n = modifyName name'
                     tyArgs = listE $ map (\(_, ty) -> compileType ty) args
-                in [|(n, $tyArgs)|]
-            _ ->
-                fail "Can only derive sum types with options like C Int a"
+                in [|(n, Right $tyArgs)|]
+            RecC name' args ->
+                let n = modifyName name'
+                    tyArgs = listE $ map (\(nm, _, ty) -> let nm' = fieldLabelModifier opts $ nameBase nm
+                                                          in  [|(nm', $(compileType ty))|]) args
+                in [|(n, Left $tyArgs)|]
+            _ -> fail ("Can't derive this sum: " ++ show c)
 
-deriveSynonym :: DeriveOpts -> Name -> [TyVarBndr] -> Type -> Q [Dec]
-deriveSynonym opts name vars otherT =
+deriveSynonym :: Options -> Name -> [TyVarBndr] -> Type -> Q [Dec]
+deriveSynonym _ name vars otherT =
     runDerive name vars $ \typeName ->
         [|ETypePrimAlias (EPrimAlias $typeName $otherType)|]
     where
       otherType = compileType otherT
 
-deriveElmDef :: DeriveOpts -> Name -> Q [Dec]
+deriveBoth :: Options -> Name -> Q [Dec]
+deriveBoth o n = (++) <$> deriveElmDef o n <*> deriveJSON o n
+
+deriveElmDef :: Options -> Name -> Q [Dec]
 deriveElmDef opts name =
     do TyConI tyCon <- reify name
        case tyCon of

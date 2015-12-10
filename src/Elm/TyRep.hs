@@ -3,8 +3,40 @@ module Elm.TyRep where
 import Data.List
 import Data.Proxy
 
+import Data.Aeson.Types (SumEncoding(..))
+import Data.Monoid ((<>))
+
 class IsElmDefinition a where
     compileElmDef :: Proxy a -> ETypeDef
+
+newtype SumEncoding' = SumEncoding' SumEncoding
+
+instance Show SumEncoding' where
+    show (SumEncoding' se) = case se of
+                                 TaggedObject n f -> "TaggedObject " ++ show n ++ " " ++ show f
+                                 ObjectWithSingleField -> "ObjectWithSingleField"
+                                 TwoElemArray -> "TwoElemArray"
+
+instance Eq SumEncoding' where
+    SumEncoding' a == SumEncoding' b = case (a,b) of
+                                           (TaggedObject a1 b1, TaggedObject a2 b2) -> a1 == a2 && b1 == b2
+                                           (ObjectWithSingleField, ObjectWithSingleField) -> True
+                                           (TwoElemArray, TwoElemArray) -> True
+                                           _ -> False
+
+instance Ord SumEncoding' where
+    compare (SumEncoding' a) (SumEncoding' b) =
+       case (a,b) of
+          (TaggedObject a1 b1, TaggedObject a2 b2) -> compare a1 a2 <> compare b1 b2
+          (TaggedObject _ _, _) -> LT
+          (_, TaggedObject _ _) -> GT
+          (ObjectWithSingleField, ObjectWithSingleField) -> EQ
+          (ObjectWithSingleField, _) -> LT
+          (_, ObjectWithSingleField) -> GT
+          (TwoElemArray, TwoElemArray) -> EQ
+
+defSumEncoding :: SumEncoding'
+defSumEncoding = SumEncoding' ObjectWithSingleField
 
 data ETypeDef
    = ETypeAlias EAlias
@@ -45,24 +77,25 @@ data EAlias
    = EAlias
    { ea_name :: ETypeName
    , ea_fields :: [(String, EType)]
+   , ea_omit_null :: Bool
    } deriving (Show, Eq, Ord)
 
 data ESum
    = ESum
-   { es_name :: ETypeName
-   , es_options :: [(String, [EType])]
+   { es_name          :: ETypeName
+   , es_options       :: [(String, Either [(String, EType)] [EType])]
+   , es_type          :: SumEncoding'
+   , es_omit_null     :: Bool
+   , es_unary_strings :: Bool
    } deriving (Show, Eq, Ord)
 
 unpackTupleType :: EType -> [EType]
 unpackTupleType t =
     unfoldr (\ty ->
                  case ty of
-                   Just (ETyApp (ETyApp (ETyTuple i) r) r') ->
-                       Just (r, Just r')
-                   Just t ->
-                       Just (t, Nothing)
-                   Nothing ->
-                       Nothing
+                   Just (ETyApp (ETyApp (ETyTuple _) r) r') -> Just (r, Just r')
+                   Just tp -> Just (tp, Nothing)
+                   Nothing -> Nothing
             ) (Just t)
 
 unpackToplevelConstr :: EType -> [EType]

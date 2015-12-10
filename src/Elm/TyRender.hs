@@ -1,6 +1,7 @@
 module Elm.TyRender where
 
 import Elm.TyRep
+import Elm.Utils
 
 import Data.List
 
@@ -20,11 +21,14 @@ instance ElmRenderable EType where
           [t] -> renderSingleTy t
           xs -> "(" ++ intercalate ", " (map renderSingleTy xs) ++ ")"
         where
-          renderSingleTy ty =
-              case ty of
+          renderSingleTy typ =
+              case typ of
                 ETyVar v -> renderElm v
                 ETyCon c -> renderElm c
-                ETyTuple n -> error "Library Bug: This should never happen!"
+                ETyTuple _ -> error "Library Bug: This should never happen!"
+                ETyApp (ETyCon (ETCon "HashSet")) key -> renderSingleTy (ETyApp (ETyCon (ETCon "Set")) key)
+                ETyApp (ETyApp (ETyCon (ETCon mmap)) key) value
+                        | mmap `elem` ["Map", "HashMap"] -> "(Dict " ++ renderElm key ++ " " ++ renderElm value ++ ")"
                 ETyApp l r -> "(" ++ renderElm l ++ " " ++ renderElm r ++ ")"
 
 instance ElmRenderable ETCon where
@@ -40,7 +44,7 @@ instance ElmRenderable ETypeName where
 instance ElmRenderable EAlias where
     renderElm alias =
         "type alias " ++ renderElm (ea_name alias) ++ " = \n   { "
-        ++ intercalate "\n   , " (map (\(fld, ty) -> fld ++ ": " ++ renderElm ty) (ea_fields alias))
+        ++ intercalate "\n   , " (map (\(fld, ty) -> fixReserved fld ++ ": " ++ renderElm ty) (ea_fields alias))
         ++ "\n   }\n"
 
 instance ElmRenderable ESum where
@@ -49,8 +53,9 @@ instance ElmRenderable ESum where
         ++ intercalate "\n    | " (map mkOpt (es_options s))
         ++ "\n"
         where
-          mkOpt (name, types) =
-              name ++ " " ++ unwords (map renderElm types)
+          mkOpt (name, Left types) = cap name ++ " {" ++ intercalate ", " (map (\(fld, ty) -> fixReserved fld ++ ": " ++ renderElm ty) types) ++ "}"
+          mkOpt (name, Right types) =
+              cap name ++ " " ++ unwords (map renderElm types)
 
 instance ElmRenderable EPrimAlias where
     renderElm pa =

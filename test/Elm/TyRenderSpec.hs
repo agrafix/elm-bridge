@@ -30,7 +30,7 @@ data SomeOpts a
 
 $(deriveElmDef (fieldDropOpts 2) ''Foo)
 $(deriveElmDef (fieldDropOpts 2) ''Bar)
-$(deriveElmDef defaultOpts ''SomeOpts)
+$(deriveElmDef defaultOptions ''SomeOpts)
 
 fooCode :: String
 fooCode = "type alias Foo  = \n   { name: String\n   , blablub: Int\n   }\n"
