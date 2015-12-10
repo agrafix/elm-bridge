@@ -121,11 +121,14 @@ jsonParserForDef etd =
                                          ++ " ("
                                          ++ unwords (parseRecords args)
                                          ++ ")"
-            mkDecoder oname (Right args) = (if length args == 1 then "Json.Decode.map" else "Json.Decode.tuple" ++ show (length args))
-                                         ++ " "
-                                         ++ cap oname
-                                         ++ " "
-                                         ++ unwords (map (\t' -> "(" ++ jsonParserForType t' ++ ")") args)
+            mkDecoder oname (Right args) = unwords ( decodeFunction
+                                                   : cap oname
+                                                   : map (\t' -> "(" ++ jsonParserForType t' ++ ")") args
+                                                   )
+                where decodeFunction = case length args of
+                                           0 -> "Json.Decode.succeed"
+                                           1 -> "Json.Decode.map"
+                                           n -> "Json.Decode.tuple" ++ show n
     where
       funcname name = "jsonDec" ++ et_name name
       prependTypes str = map (\tv -> str ++ tv_name tv) . et_args
