@@ -44,7 +44,7 @@ instance ElmRenderable ETypeName where
 instance ElmRenderable EAlias where
     renderElm alias = (if ea_newtype alias then withnewtype else nonewtype) ++ body
         where
-            withnewtype = "type " ++ renderElm (ea_name alias) ++ " = " ++ renderElm (ea_name alias)
+            withnewtype = "type " ++ renderElm (ea_name alias) ++ " = " ++ et_name (ea_name alias)
             nonewtype = "type alias " ++ renderElm (ea_name alias) ++ " ="
             body = "\n   { "
                 ++ intercalate "\n   , " (map (\(fld, ty) -> fixReserved fld ++ ": " ++ renderElm ty) (ea_fields alias))

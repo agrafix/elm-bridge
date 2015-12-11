@@ -58,9 +58,12 @@ jsonParserForType' mh ty =
                 in "Json.Decode.tuple" ++ show tupleLen ++ " (" ++ commas ++ ") "
                     ++ unwords (map (\t' -> "(" ++ jsonParserForType t' ++ ")") xs)
 
-parseRecords :: [(String, EType)] -> [String]
-parseRecords fields = map mkField fields ++ ["   Json.Decode.succeed {" ++ intercalate ", " (map (\(fldName, _) -> fixReserved fldName ++ " = p" ++ fldName) fields) ++ "}"]
+parseRecords :: Maybe ETypeName -> [(String, EType)] -> [String]
+parseRecords newtyped fields = map mkField fields ++ ["   Json.Decode.succeed " ++ mkNewtype ("{" ++ intercalate ", " (map (\(fldName, _) -> fixReserved fldName ++ " = p" ++ fldName) fields) ++ "}")]
     where
+        mkNewtype x = case newtyped of
+                          Nothing -> x
+                          Just nm -> "(" ++ et_name nm ++ " " ++ x ++ ")"
         mkField (fldName, fldType) =
            let (fldStart, fldEnd, mh) = if isOption fldType
                                             then ("(Json.Decode.maybe ", ")", Root)
@@ -90,7 +93,7 @@ jsonParserForDef etd =
       ETypeAlias (EAlias name fields _ newtyping) -> unlines
           ( decoderType name
           : (makeName name ++ " =")
-          : parseRecords fields
+          : parseRecords (if newtyping then Just name else Nothing) fields
           )
       ETypeSum (ESum name opts (SumEncoding' encodingType) _ unarystring) ->
             decoderType name ++ "\n" ++
@@ -119,7 +122,7 @@ jsonParserForDef etd =
             mkDecoder oname (Left args)  =  "Json.Decode.map "
                                          ++ cap oname
                                          ++ " ("
-                                         ++ unwords (parseRecords args)
+                                         ++ unwords (parseRecords Nothing args)
                                          ++ ")"
             mkDecoder oname (Right args) = unwords ( decodeFunction
                                                    : cap oname
@@ -138,7 +141,7 @@ jsonParserForDef etd =
 
 -- | Compile a JSON serializer for an Elm type
 --
--- TODO : omitting null values on serialization
+-- TODO : omitting null values on serialization ..
 jsonSerForType :: EType -> String
 jsonSerForType = jsonSerForType' False
 
@@ -181,9 +184,9 @@ jsonSerForDef :: ETypeDef -> String
 jsonSerForDef etd =
     case etd of
       ETypePrimAlias (EPrimAlias name ty) ->
-          makeName name ++  " = " ++ jsonSerForType ty ++ " val\n"
+          makeName name False ++  " = " ++ jsonSerForType ty ++ " val\n"
       ETypeAlias (EAlias name fields _ newtyping) ->
-          makeName name ++ " =\n   Json.Encode.object\n   ["
+          makeName name newtyping ++ " =\n   Json.Encode.object\n   ["
           ++ intercalate "\n   ," (map (\(fldName, fldType) -> " (\"" ++ fldName ++ "\", " ++ jsonSerForType fldType ++ " val." ++ fixReserved fldName ++ ")") fields)
           ++ "\n   ]\n"
       ETypeSum (ESum name opts (SumEncoding' se) _ unarystring) ->
@@ -196,13 +199,13 @@ jsonSerForDef etd =
                                    TwoElemArray -> "encodeSumTwoElementArray"
                                    TaggedObject k c -> unwords ["encodeSumTaggedObject", show k, show c]
               defaultEncoding = unlines (
-                ( makeName name ++ " =")
+                ( makeName name False ++ " =")
                 : "    let keyval v = case v of"
                 :  (map (replicate 12 ' ' ++) (map mkcase opts))
                 ++ [ "    " ++ unwords ["in", encodeFunction, "keyval", "val"] ]
                 )
               unaryEncoding names = unlines (
-                [ makeName name ++ " ="
+                [ makeName name False ++ " ="
                 , "    case val of"
                 ] ++ map (\n -> replicate 8 ' ' ++ cap n ++ " -> Json.Encode.string " ++ show n) names
                 )
@@ -212,11 +215,13 @@ jsonSerForDef etd =
               argList a = unwords $ map (\i -> "v" ++ show i ) [1 .. length a]
               numargs :: (a -> String) -> [a] -> String
               numargs f = intercalate ", " . zipWith (\n a -> f a ++ " v" ++ show n)  ([1..] :: [Int])
-              mkEncodeObject args = "EObject [" ++ intercalate ", " (map (\(n,t) -> "(" ++ show n ++ ", " ++ jsonSerForType t ++ " vs." ++ fixReserved n ++ ")") args) ++ "]"
-              mkEncodeList [arg] = "EValue (" ++ jsonSerForType arg ++ " v1)"
-              mkEncodeList args =  "EValue (Json.Encode.list [" ++ numargs jsonSerForType args ++ "])"
+              mkEncodeObject args = "encodeObject [" ++ intercalate ", " (map (\(n,t) -> "(" ++ show n ++ ", " ++ jsonSerForType t ++ " vs." ++ fixReserved n ++ ")") args) ++ "]"
+              mkEncodeList [arg] = "encodeValue (" ++ jsonSerForType arg ++ " v1)"
+              mkEncodeList args =  "encodeValue (Json.Encode.list [" ++ numargs jsonSerForType args ++ "])"
     where
-      makeName name =
+      makeName name newtyping =
            "jsonEnc" ++ et_name name ++ " "
            ++ unwords (map (\tv -> "localEncoder_" ++ tv_name tv) $ et_args name)
-           ++ " val"
+           ++ if newtyping
+                  then " (" ++ et_name name ++ " val)"
+                  else " val"

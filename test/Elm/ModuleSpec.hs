@@ -80,8 +80,8 @@ moduleCode' = unlines
     , ""
     , "jsonEncQux localEncoder_a val ="
     , "    let keyval v = case v of"
-    , "                    Qux1 v1 v2 -> (\"Qux1\", EValue (Json.Encode.list [Json.Encode.int v1, Json.Encode.string v2]))"
-    , "                    Qux2 vs -> (\"Qux2\", EObject [(\"a\", Json.Encode.int vs.a), (\"test\", localEncoder_a vs.test)])"
+    , "                    Qux1 v1 v2 -> (\"Qux1\", encodeValue (Json.Encode.list [Json.Encode.int v1, Json.Encode.string v2]))"
+    , "                    Qux2 vs -> (\"Qux2\", encodeObject [(\"a\", Json.Encode.int vs.a), (\"test\", localEncoder_a vs.test)])"
     , "    in encodeSumObjectWithSingleField keyval val"
     , ""
     ]

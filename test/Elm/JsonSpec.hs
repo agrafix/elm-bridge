@@ -82,9 +82,9 @@ bazSer :: String
 bazSer = unlines
     [ "jsonEncBaz localEncoder_a val ="
     , "    let keyval v = case v of"
-    , "                    Baz1 vs -> (\"Baz1\", EObject [(\"foo\", Json.Encode.int vs.foo), (\"qux\", encodeMap (Json.Encode.int) (localEncoder_a) vs.qux)])"
-    , "                    Baz2 vs -> (\"Baz2\", EObject [(\"bar\", (maybe Json.Encode.null (Json.Encode.int)) vs.bar), (\"str\", Json.Encode.string vs.str)])"
-    , "                    Zob v1 -> (\"Zob\", EValue (localEncoder_a v1))"
+    , "                    Baz1 vs -> (\"Baz1\", encodeObject [(\"foo\", Json.Encode.int vs.foo), (\"qux\", encodeMap (Json.Encode.int) (localEncoder_a) vs.qux)])"
+    , "                    Baz2 vs -> (\"Baz2\", encodeObject [(\"bar\", (maybe Json.Encode.null (Json.Encode.int)) vs.bar), (\"str\", Json.Encode.string vs.str)])"
+    , "                    Zob v1 -> (\"Zob\", encodeValue (localEncoder_a v1))"
     , "    in encodeSumObjectWithSingleField keyval val"
     ]
 
@@ -132,8 +132,8 @@ someOptsSer :: String
 someOptsSer = unlines
     [ "jsonEncSomeOpts localEncoder_a val ="
     , "    let keyval v = case v of"
-    , "                    Okay v1 -> (\"Okay\", EValue (Json.Encode.int v1))"
-    , "                    NotOkay v1 -> (\"NotOkay\", EValue (localEncoder_a v1))"
+    , "                    Okay v1 -> (\"Okay\", encodeValue (Json.Encode.int v1))"
+    , "                    NotOkay v1 -> (\"NotOkay\", encodeValue (localEncoder_a v1))"
     , "    in encodeSumObjectWithSingleField keyval val"
     ]
 
@@ -168,8 +168,8 @@ unaryASer :: String
 unaryASer = unlines
     [ "jsonEncUnaryA  val ="
     , "    let keyval v = case v of"
-    , "                    UnaryA1  -> (\"UnaryA1\", EValue (Json.Encode.list []))"
-    , "                    UnaryA2  -> (\"UnaryA2\", EValue (Json.Encode.list []))"
+    , "                    UnaryA1  -> (\"UnaryA1\", encodeValue (Json.Encode.list []))"
+    , "                    UnaryA2  -> (\"UnaryA2\", encodeValue (Json.Encode.list []))"
     , "    in encodeSumObjectWithSingleField keyval val"
     ]
 

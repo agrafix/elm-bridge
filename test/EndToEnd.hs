@@ -11,6 +11,7 @@ import Test.QuickCheck.Gen (sample', oneof, Gen)
 import qualified Data.Text as T
 import Control.Applicative
 import System.Environment
+import Data.Char (toLower)
 import Prelude
 
 data Record1 a = Record1 { _r1foo :: Int, _r1bar :: Maybe Int, _r1baz :: a, _r1qux :: Maybe a } deriving Show
@@ -29,8 +30,8 @@ data Sum10 a = Sum10A a | Sum10B (Maybe a) | Sum10C a a | Sum10D { _s10foo :: a 
 data Sum11 a = Sum11A a | Sum11B (Maybe a) | Sum11C a a | Sum11D { _s11foo :: a } | Sum11E { _s11bar :: Int, _s11baz :: Int } deriving Show
 data Sum12 a = Sum12A a | Sum12B (Maybe a) | Sum12C a a | Sum12D { _s12foo :: a } | Sum12E { _s12bar :: Int, _s12baz :: Int } deriving Show
 
-$(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = False } ''Record1)
-$(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = True  } ''Record2)
+$(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = False, makeNewtype = True } ''Record1)
+$(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = True , makeNewtype = True } ''Record2)
 
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = False, allNullaryToStringTag = False, sumEncoding = TaggedObject "tag" "content" } ''Sum01)
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = True , allNullaryToStringTag = False, sumEncoding = TaggedObject "tag" "content" } ''Sum02)
@@ -48,14 +49,14 @@ $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = Fa
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = True , allNullaryToStringTag = True , sumEncoding = TwoElemArray } ''Sum12)
 
 instance Arbitrary a => Arbitrary (Record1 a) where
-    arbitrary = Record1 <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+    arbitrary = Record1 <$> arbitrary <*> fmap Just arbitrary <*> arbitrary <*> fmap Just arbitrary
 instance Arbitrary a => Arbitrary (Record2 a) where
-    arbitrary = Record2 <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
+    arbitrary = Record2 <$> arbitrary <*> fmap Just arbitrary <*> arbitrary <*> fmap Just arbitrary
 
 arb :: Arbitrary a => (a -> b) -> (Maybe a -> b) -> (a -> a -> b) -> (a -> b) -> (Int -> Int -> b) -> Gen b
 arb c1 c2 c3 c4 c5 = oneof
     [ c1 <$> arbitrary
-    , c2 <$> arbitrary
+    , c2 . Just <$> arbitrary
     , c3 <$> arbitrary <*> arbitrary
     , c4 <$> arbitrary
     , c5 <$> arbitrary <*> arbitrary
@@ -76,19 +77,35 @@ instance Arbitrary a => Arbitrary (Sum12 a) where arbitrary = arb Sum12A Sum12B 
 
 elmModuleContent :: String
 elmModuleContent = unlines
-    [ "module MyTests where"
+    [ "-- This module requires the following packages:"
+    , "-- * deadfoxygrandpa/elm-test"
+    , "-- * bartavelle/json-helpers"
+    , "module MyTests where"
     , ""
-    , "import Dict exposing(Dict)"
+    , "import Dict exposing (Dict)"
+    , "import Set exposing (Set)"
     , "import Json.Decode exposing ((:=), Value)"
     , "import Json.Encode"
-    , "import Json.Bridge.Helpers exposing (..)"
+    , "import Json.Helpers exposing (..)"
     , "import ElmTest exposing (..)"
     , "import Graphics.Element exposing (Element)"
     , "import String"
     , ""
     , "main : Element"
-    , "main = elementRunner <| suite \"Testing\" [ sumEncode, sumDecode ]"
-    ,""
+    , "main = elementRunner <| suite \"Testing\" [ sumEncode, sumDecode, recordDecode, recordEncode ]"
+    , ""
+    , "recordDecode : Test"
+    , "recordDecode = suite \"Record decoding checks\""
+    , "              [ recordDecode1"
+    , "              , recordDecode2"
+    , "              ]"
+    , ""
+    , "recordEncode : Test"
+    , "recordEncode = suite \"Record encoding checks\""
+    , "              [ recordEncode1"
+    , "              , recordEncode2"
+    , "              ]"
+    , ""
     , "sumDecode : Test"
     , "sumDecode = suite \"Sum decoding checks\""
     , "              [ sumDecode01"
@@ -121,16 +138,10 @@ elmModuleContent = unlines
     , "              , sumEncode12"
     , "              ]"
     , ""
-    , "-- this is done to prevent artificial differences due to object ordering, this is hacky as hell :("
+    , "-- this is done to prevent artificial differences due to object ordering, this won't work with Maybe's though :("
     , "assertEqualHack : String -> String -> Assertion"
     , "assertEqualHack a b ="
-    , "    let remix = String.map replaceSpecial >> String.split \",\" >> List.sort"
-    , "        replaceSpecial c = case c of"
-    , "            '{' -> ','"
-    , "            '}' -> ','"
-    , "            '[' -> ','"
-    , "            ']' -> ','"
-    , "            x   -> x"
+    , "    let remix = Json.Decode.decodeString Json.Decode.value"
     , "    in assertEqual (remix a) (remix b)"
     , ""
     , makeModuleContent
@@ -151,22 +162,48 @@ elmModuleContent = unlines
         ]
     ]
 
-mkSumDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
-mkSumDecodeTest num elems = unlines (
-    [ "sumDecode" ++ num ++ " : Test"
-    , "sumDecode" ++ num ++ " = suite \"sum decode " ++ num ++ "\""
+mkDecodeTest :: (Show a, ToJSON a) => String -> String -> String -> [a] -> String
+mkDecodeTest pred prefix num elems = unlines (
+    [ map toLower pred ++ "Decode" ++ num ++ " : Test"
+    , map toLower pred ++ "Decode" ++ num ++ " = suite \"" ++ pred ++ " decode " ++ num ++ "\""
     ]
     ++ map mktest (zip ([1..] :: [Int]) elems)
     ++ ["  ]"]
     )
   where
-      mktest (n,e) = prefix ++ "test \"" ++ show n ++ "\" (assertEqual (Json.Decode.decodeString (jsonDecSum" ++ num ++ " Json.Decode.int) " ++ encoded ++ ") (Ok (" ++ pretty ++ ")))"
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqual (Json.Decode.decodeString (jsonDec" ++ pred ++ num ++ " Json.Decode.int) " ++ encoded ++ ") (Ok (" ++ pretty ++ ")))"
         where
-            pretty = T.unpack $ T.replace (T.pack ("_s" ++ num)) T.empty $ T.pack $ show e
+            pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
             encoded = show (encode e)
-            prefix = if n == 1 then "  [ " else "  , "
+            pfix = if n == 1 then "  [ " else "  , "
+
+mkSumDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSumDecodeTest = mkDecodeTest "Sum" "_s"
+
+mkRecordDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkRecordDecodeTest = mkDecodeTest "Record" "_r"
+
+mkEncodeTest :: (Show a, ToJSON a) => String -> String -> String -> [a] -> String
+mkEncodeTest pred prefix num elems = unlines (
+    [ map toLower pred ++ "Encode" ++ num ++ " : Test"
+    , map toLower pred ++ "Encode" ++ num ++ " = suite \"" ++ pred ++ " encode " ++ num ++ "\""
+    ]
+    ++ map mktest (zip ([1..] :: [Int]) elems)
+    ++ ["  ]"]
+    )
+  where
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqualHack (Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ " Json.Encode.int (" ++ pretty ++ "))) " ++ encoded ++ ")"
+        where
+            pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
+            encoded = show (encode e)
+            pfix = if n == 1 then "  [ " else "  , "
 
 mkSumEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSumEncodeTest = mkEncodeTest "Sum" "_s"
+
+mkRecordEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkRecordEncodeTest = mkEncodeTest "Record" "_r"
+{-
 mkSumEncodeTest num elems = unlines (
     [ "sumEncode" ++ num ++ " : Test"
     , "sumEncode" ++ num ++ " = suite \"sum encode " ++ num ++ "\""
@@ -180,7 +217,7 @@ mkSumEncodeTest num elems = unlines (
             pretty = T.unpack $ T.replace (T.pack ("_s" ++ num)) T.empty $ T.pack $ show e
             encoded = show (encode e)
             prefix = if n == 1 then "  [ " else "  , "
-
+-}
 main :: IO ()
 main = do
     ss01 <- sample' arbitrary :: IO [Sum01 Int]
@@ -195,6 +232,8 @@ main = do
     ss10 <- sample' arbitrary :: IO [Sum10 Int]
     ss11 <- sample' arbitrary :: IO [Sum11 Int]
     ss12 <- sample' arbitrary :: IO [Sum12 Int]
+    re01 <- sample' arbitrary :: IO [Record1 Int]
+    re02 <- sample' arbitrary :: IO [Record2 Int]
     args <- getArgs
     case args of
         [] -> return ()
@@ -224,5 +263,9 @@ main = do
                        , mkSumDecodeTest "10" ss10
                        , mkSumDecodeTest "11" ss11
                        , mkSumDecodeTest "12" ss12
+                       , mkRecordDecodeTest "1" re01
+                       , mkRecordDecodeTest "2" re02
+                       , mkRecordEncodeTest "1" re01
+                       , mkRecordEncodeTest "2" re02
                        ]
 
