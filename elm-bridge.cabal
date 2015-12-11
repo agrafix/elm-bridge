@@ -56,7 +56,6 @@ test-suite derive-elm-tests
                        Elm.DeriveSpec
                        Elm.TyRenderSpec
                        Elm.JsonSpec
-                       Elm.TestHelpers
                        Elm.ModuleSpec
   build-depends:
                        base,
