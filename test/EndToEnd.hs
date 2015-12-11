@@ -10,6 +10,7 @@ import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Gen (sample', oneof, Gen)
 import qualified Data.Text as T
 import Control.Applicative
+import System.Environment
 import Prelude
 
 data Record1 a = Record1 { _r1foo :: Int, _r1bar :: Maybe Int, _r1baz :: a, _r1qux :: Maybe a } deriving Show
@@ -194,7 +195,11 @@ main = do
     ss10 <- sample' arbitrary :: IO [Sum10 Int]
     ss11 <- sample' arbitrary :: IO [Sum11 Int]
     ss12 <- sample' arbitrary :: IO [Sum12 Int]
-    putStrLn $ unlines [ elmModuleContent
+    args <- getArgs
+    case args of
+        [] -> return ()
+        (x:_) -> writeFile x $
+               unlines [ elmModuleContent
                        , mkSumEncodeTest "01" ss01
                        , mkSumEncodeTest "02" ss02
                        , mkSumEncodeTest "03" ss03
@@ -220,5 +225,4 @@ main = do
                        , mkSumDecodeTest "11" ss11
                        , mkSumDecodeTest "12" ss12
                        ]
-
 
