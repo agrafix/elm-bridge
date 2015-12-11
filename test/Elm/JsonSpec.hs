@@ -102,7 +102,7 @@ barParse = unlines
 bazParse :: String
 bazParse = unlines
     [ "jsonDecBaz : Json.Decode.Decoder a -> Json.Decode.Decoder ( Baz a )"
-    , "jsonDecBaz localDecoder_a = "
+    , "jsonDecBaz localDecoder_a ="
     , "    let jsonDecDictBaz = Dict.fromList"
     , "            [ (\"Baz1\", Json.Decode.map Baz1 (   (\"foo\" := Json.Decode.int) `Json.Decode.andThen` \\pfoo ->     (\"qux\" := decodeMap (Json.Decode.int) (localDecoder_a)) `Json.Decode.andThen` \\pqux ->     Json.Decode.succeed {foo = pfoo, qux = pqux}))"
     , "            , (\"Baz2\", Json.Decode.map Baz2 (   (Json.Decode.maybe (\"bar\" := Json.Decode.int)) `Json.Decode.andThen` \\pbar ->     (\"str\" := Json.Decode.string) `Json.Decode.andThen` \\pstr ->     Json.Decode.succeed {bar = pbar, str = pstr}))"
@@ -113,14 +113,14 @@ bazParse = unlines
 
 quxParse :: String
 quxParse = unlines
-    [ "jsonDecQux localDecoder_a = "
+    [ "jsonDecQux localDecoder_a ="
     , "   "
     ]
 
 someOptsParse :: String
 someOptsParse = unlines
     [ "jsonDecSomeOpts : Json.Decode.Decoder a -> Json.Decode.Decoder ( SomeOpts a )"
-    , "jsonDecSomeOpts localDecoder_a = "
+    , "jsonDecSomeOpts localDecoder_a ="
     , "    let jsonDecDictSomeOpts = Dict.fromList"
     , "            [ (\"Okay\", Json.Decode.map Okay (Json.Decode.int))"
     , "            , (\"NotOkay\", Json.Decode.map NotOkay (localDecoder_a))"
@@ -149,10 +149,10 @@ test1Parse = unlines
 unaryAParse :: String
 unaryAParse = unlines
     [ "jsonDecUnaryA : Json.Decode.Decoder ( UnaryA )"
-    , "jsonDecUnaryA = "
+    , "jsonDecUnaryA ="
     , "    let jsonDecDictUnaryA = Dict.fromList"
-    , "            [ (\"UnaryA1\", Json.Decode.tuple0 UnaryA1 )"
-    , "            , (\"UnaryA2\", Json.Decode.tuple0 UnaryA2 )"
+    , "            [ (\"UnaryA1\", Json.Decode.succeed UnaryA1)"
+    , "            , (\"UnaryA2\", Json.Decode.succeed UnaryA2)"
     , "            ]"
     , "    in  decodeSumObjectWithSingleField  \"UnaryA\" jsonDecDictUnaryA"
     ]

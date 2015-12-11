@@ -42,14 +42,17 @@ instance ElmRenderable ETypeName where
         et_name tyName ++ " " ++ unwords (map renderElm $ et_args tyName)
 
 instance ElmRenderable EAlias where
-    renderElm alias =
-        "type alias " ++ renderElm (ea_name alias) ++ " = \n   { "
-        ++ intercalate "\n   , " (map (\(fld, ty) -> fixReserved fld ++ ": " ++ renderElm ty) (ea_fields alias))
-        ++ "\n   }\n"
+    renderElm alias = (if ea_newtype alias then withnewtype else nonewtype) ++ body
+        where
+            withnewtype = "type " ++ renderElm (ea_name alias) ++ " = " ++ renderElm (ea_name alias)
+            nonewtype = "type alias " ++ renderElm (ea_name alias) ++ " ="
+            body = "\n   { "
+                ++ intercalate "\n   , " (map (\(fld, ty) -> fixReserved fld ++ ": " ++ renderElm ty) (ea_fields alias))
+                ++ "\n   }\n"
 
 instance ElmRenderable ESum where
     renderElm s =
-        "type " ++ renderElm (es_name s) ++ " = \n    "
+        "type " ++ renderElm (es_name s) ++ " =\n    "
         ++ intercalate "\n    | " (map mkOpt (es_options s))
         ++ "\n"
         where

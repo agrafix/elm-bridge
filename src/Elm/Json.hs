@@ -94,9 +94,9 @@ jsonParserForDef etd =
           )
       ETypeSum (ESum name opts (SumEncoding' encodingType) _ unarystring) ->
             decoderType name ++ "\n" ++
-            makeName name ++ " = " ++
+            makeName name ++ " =" ++
                 case allUnaries unarystring opts of
-                    Just names -> deriveUnaries names
+                    Just names -> " " ++ deriveUnaries names
                     Nothing    -> "\n" ++ encodingDictionnary ++ isObjectSet ++ "\n    in  " ++ declLine ++ "\n"
           where
             tab n s = replicate n ' ' ++ s
