@@ -5,8 +5,6 @@ import Elm.Derive
 import Elm.TyRep
 import Elm.TyRender
 
-import Elm.TestHelpers
-
 import Data.Proxy
 import Test.Hspec
 
@@ -28,8 +26,8 @@ data SomeOpts a
    = Okay Int
    | NotOkay a
 
-$(deriveElmDef (fieldDropOpts 2) ''Foo)
-$(deriveElmDef (fieldDropOpts 2) ''Bar)
+$(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
+$(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef defaultOptions ''SomeOpts)
 
 fooCode :: String

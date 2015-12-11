@@ -5,8 +5,6 @@ import Elm.Derive
 import Elm.TyRep
 import Elm.Json
 
-import Elm.TestHelpers
-
 import Data.Proxy
 import Test.Hspec
 import Data.Char (toLower)
@@ -48,9 +46,9 @@ data TestComp a = TestComp { _t1 :: Change Int
 data Qux a = Qux1 { _quxfoo :: Int, _quxqux :: a }
            | Qux2 Int (M.Map Int a)
 
-$(deriveElmDef (fieldDropOpts 2) ''Foo)
-$(deriveElmDef (fieldDropOpts 2) ''Bar)
-$(deriveElmDef (fieldDropOpts 1) ''TestComp)
+$(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
+$(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
+$(deriveElmDef (defaultOptionsDropLower 1) ''TestComp)
 $(deriveElmDef defaultOptions ''SomeOpts)
 $(deriveElmDef defaultOptions{ allNullaryToStringTag = False } ''UnaryA)
 $(deriveElmDef defaultOptions{ allNullaryToStringTag = True  } ''UnaryB)

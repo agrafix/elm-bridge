@@ -4,7 +4,6 @@ module Elm.ModuleSpec (spec) where
 import Elm.Derive
 import Elm.Module
 
-import Elm.TestHelpers
 
 import Data.Proxy
 import Test.Hspec
@@ -21,8 +20,8 @@ data Qux a = Qux1 Int String
            | Qux2 { _qux2a :: Int, _qux2test :: a }
            deriving (Show, Eq)
 
-$(deriveElmDef (fieldDropOpts 2) ''Bar)
-$(deriveElmDef (fieldDropOpts 5) ''Qux)
+$(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
+$(deriveElmDef (defaultOptionsDropLower 5) ''Qux)
 
 moduleCode :: String
 moduleCode = unlines
