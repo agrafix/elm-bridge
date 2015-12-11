@@ -78,6 +78,7 @@ data EAlias
    { ea_name :: ETypeName
    , ea_fields :: [(String, EType)]
    , ea_omit_null :: Bool
+   , ea_newtype   :: Bool
    } deriving (Show, Eq, Ord)
 
 data ESum

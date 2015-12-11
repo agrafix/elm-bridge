@@ -5,7 +5,6 @@ import Elm.Derive
 import Elm.TyRep
 
 import Data.Proxy
-import Data.Aeson.Types (SumEncoding(..), Options(..))
 import Test.Hspec
 import Data.Char (toLower)
 
@@ -48,7 +47,7 @@ deriveElmDef defaultOptions { fieldLabelModifier = drop 1 . map toLower } ''Test
 deriveElmDef defaultOptions { fieldLabelModifier = drop 4 . map toLower, sumEncoding = TaggedObject "key" "value" } ''Qux
 
 testElm :: ETypeDef
-testElm = ETypeAlias $ EAlias 
+testElm = ETypeAlias $ EAlias
     { ea_name =
         ETypeName
         { et_name = "Test"
@@ -59,6 +58,7 @@ testElm = ETypeAlias $ EAlias
         , ("t2",ETyApp (ETyCon (ETCon {tc_name = "Change"})) (ETyVar (ETVar {tv_name = "a"})))
         ]
     , ea_omit_null = False
+    , ea_newtype = False
     }
 
 fooElm :: ETypeDef
@@ -73,6 +73,7 @@ fooElm =
     , ea_fields =
         [("f_name",ETyCon (ETCon {tc_name = "String"})),("f_blablub",ETyCon (ETCon {tc_name = "Int"}))]
     , ea_omit_null = False
+    , ea_newtype = False
     }
 
 barElm :: ETypeDef
@@ -91,6 +92,7 @@ barElm =
         , ("b_list",ETyApp (ETyCon (ETCon {tc_name = "List"})) (ETyCon (ETCon {tc_name = "Bool"})))
         ]
     , ea_omit_null = False
+    , ea_newtype = False
     }
 
 bazElm :: ETypeDef

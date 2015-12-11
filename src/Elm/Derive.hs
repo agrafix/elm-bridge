@@ -2,13 +2,13 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 module Elm.Derive
-    ( deriveElmDef, deriveBoth, defaultOptions, defaultOptionsDropLower, Options(..) )
+    ( deriveElmDef, deriveBoth, defaultOptions, defaultOptionsDropLower, ElmOptions(..), toAesonOptions, toElmOptions, A.SumEncoding(..) )
 where
 
 import Elm.TyRep
 
 import Control.Monad
-import Data.Aeson.TH (Options(..), deriveJSON, SumEncoding(..))
+import Data.Aeson.TH (deriveJSON, SumEncoding(..))
 import qualified Data.Aeson.TH as A
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
@@ -16,10 +16,45 @@ import Data.Char (toLower)
 import Control.Applicative
 import Prelude
 
-defaultOptions :: Options
-defaultOptions = A.defaultOptions { sumEncoding = ObjectWithSingleField, allNullaryToStringTag = True, omitNothingFields = False }
+data ElmOptions = ElmOptions
+    { fieldLabelModifier :: String -> String
+      -- ^ Function applied to field labels. 
+      -- Handy for removing common record prefixes for example.
+    , constructorTagModifier :: String -> String
+      -- ^ Function applied to constructor tags which could be handy
+      -- for lower-casing them for example.
+    , allNullaryToStringTag :: Bool
+      -- ^ If 'True' the constructors of a datatype, with /all/
+      -- nullary constructors, will be encoded to just a string with
+      -- the constructor tag. If 'False' the encoding will always
+      -- follow the `sumEncoding`.
+    , omitNothingFields :: Bool
+      -- ^ If 'True' record fields with a 'Nothing' value will be
+      -- omitted from the resulting object. If 'False' the resulting
+      -- object will include those fields mapping to @null@.
+    , sumEncoding :: SumEncoding
+      -- ^ Specifies how to encode constructors of a sum datatype.
+    , makeNewtype  :: Bool
+      -- ^ Elm specific option, generates a "type" instead of a "type alias".
+      -- Doesn't make sense for sum types
+    }
 
-defaultOptionsDropLower :: Int -> Options
+toAesonOptions :: ElmOptions -> A.Options
+toAesonOptions (ElmOptions flm ctm an on se _) = A.Options flm ctm an on se
+
+toElmOptions :: A.Options -> ElmOptions
+toElmOptions (A.Options flm ctm an on se) = ElmOptions flm ctm an on se False
+
+defaultOptions :: ElmOptions
+defaultOptions = ElmOptions { sumEncoding             = ObjectWithSingleField
+                            , fieldLabelModifier      = id
+                            , constructorTagModifier  = id
+                            , allNullaryToStringTag   = True
+                            , omitNothingFields       = False
+                            , makeNewtype             = False
+                            }
+
+defaultOptionsDropLower :: Int -> ElmOptions
 defaultOptionsDropLower n = defaultOptions { fieldLabelModifier = lower . drop n }
     where
         lower "" = ""
@@ -87,14 +122,15 @@ runDerive name vars mkBody =
                 PlainTV tv -> tv
                 KindedTV tv _ -> tv
 
-deriveAlias :: Options -> Name -> [TyVarBndr] -> Con -> Q [Dec]
+deriveAlias :: ElmOptions -> Name -> [TyVarBndr] -> Con -> Q [Dec]
 deriveAlias opts name vars c =
     case c of
       RecC _ conFields ->
           let fields = listE $ map mkField conFields
               omitNothing = omitNothingFields opts
+              isNewtype = makeNewtype opts
           in runDerive name vars $ \typeName ->
-                [|ETypeAlias (EAlias $typeName $fields omitNothing)|]
+                [|ETypeAlias (EAlias $typeName $fields omitNothing isNewtype)|]
       _ -> fail "Can only derive records like CC { v :: Int, w :: a }"
     where
       mkField :: VarStrictType -> Q Exp
@@ -104,7 +140,7 @@ deriveAlias opts name vars c =
             fldName = fieldLabelModifier opts $ nameBase fname
             fldType = compileType ftype
 
-deriveSum :: Options -> Name -> [TyVarBndr] -> [Con] -> Q [Dec]
+deriveSum :: ElmOptions -> Name -> [TyVarBndr] -> [Con] -> Q [Dec]
 deriveSum opts name vars constrs =
     runDerive name vars $ \typeName ->
         [|ETypeSum (ESum $typeName $sumOpts $sumEncOpts omitNothing allNullary)|]
@@ -128,17 +164,17 @@ deriveSum opts name vars constrs =
                 in [|(n, Left $tyArgs)|]
             _ -> fail ("Can't derive this sum: " ++ show c)
 
-deriveSynonym :: Options -> Name -> [TyVarBndr] -> Type -> Q [Dec]
+deriveSynonym :: ElmOptions -> Name -> [TyVarBndr] -> Type -> Q [Dec]
 deriveSynonym _ name vars otherT =
     runDerive name vars $ \typeName ->
         [|ETypePrimAlias (EPrimAlias $typeName $otherType)|]
     where
       otherType = compileType otherT
 
-deriveBoth :: Options -> Name -> Q [Dec]
-deriveBoth o n = (++) <$> deriveElmDef o n <*> deriveJSON o n
+deriveBoth :: ElmOptions -> Name -> Q [Dec]
+deriveBoth o n = (++) <$> deriveElmDef o n <*> deriveJSON (toAesonOptions o) n
 
-deriveElmDef :: Options -> Name -> Q [Dec]
+deriveElmDef :: ElmOptions -> Name -> Q [Dec]
 deriveElmDef opts name =
     do TyConI tyCon <- reify name
        case tyCon of

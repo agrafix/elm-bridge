@@ -87,7 +87,7 @@ jsonParserForDef etd =
           , makeName name ++  " ="
           , jsonParserForType ty
           ]
-      ETypeAlias (EAlias name fields _) -> unlines
+      ETypeAlias (EAlias name fields _ newtyping) -> unlines
           ( decoderType name
           : (makeName name ++ " =")
           : parseRecords fields
@@ -182,7 +182,7 @@ jsonSerForDef etd =
     case etd of
       ETypePrimAlias (EPrimAlias name ty) ->
           makeName name ++  " = " ++ jsonSerForType ty ++ " val\n"
-      ETypeAlias (EAlias name fields _) ->
+      ETypeAlias (EAlias name fields _ newtyping) ->
           makeName name ++ " =\n   Json.Encode.object\n   ["
           ++ intercalate "\n   ," (map (\(fldName, fldType) -> " (\"" ++ fldName ++ "\", " ++ jsonSerForType fldType ++ " val." ++ fixReserved fldName ++ ")") fields)
           ++ "\n   ]\n"
