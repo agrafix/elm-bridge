@@ -83,7 +83,7 @@ bazSer = unlines
     [ "jsonEncBaz localEncoder_a val ="
     , "    let keyval v = case v of"
     , "                    Baz1 vs -> (\"Baz1\", encodeObject [(\"foo\", Json.Encode.int vs.foo), (\"qux\", encodeMap (Json.Encode.int) (localEncoder_a) vs.qux)])"
-    , "                    Baz2 vs -> (\"Baz2\", encodeObject [(\"bar\", (maybe Json.Encode.null (Json.Encode.int)) vs.bar), (\"str\", Json.Encode.string vs.str)])"
+    , "                    Baz2 vs -> (\"Baz2\", encodeObject [(\"bar\", (maybeEncode (Json.Encode.int)) vs.bar), (\"str\", Json.Encode.string vs.str)])"
     , "                    Zob v1 -> (\"Zob\", encodeValue (localEncoder_a v1))"
     , "    in encodeSumObjectWithSingleField keyval val"
     ]
