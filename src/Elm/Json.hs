@@ -157,7 +157,7 @@ jsonSerForType' omitnull ty =
       ETyApp (ETyCon (ETCon "List")) t' -> "(Json.Encode.list << List.map " ++ jsonSerForType t' ++ ")"
       ETyApp (ETyCon (ETCon "Maybe")) t' -> if omitnull
                                                 then jsonSerForType t'
-                                                else "(maybe Json.Encode.null (" ++ jsonSerForType t' ++ "))"
+                                                else "(maybeEncode (" ++ jsonSerForType t' ++ "))"
       ETyApp (ETyCon (ETCon "Set")) t' -> "(encodeSet " ++ jsonSerForType t' ++ ")"
       ETyApp (ETyCon (ETCon "HashSet")) t' -> "(encodeSet " ++ jsonSerForType t' ++ ")"
       ETyApp (ETyApp (ETyCon (ETCon mmap)) key) value
@@ -177,6 +177,7 @@ jsonSerForType' omitnull ty =
                     tupleArgs =
                         unwords $ map (\(_, v) -> "v" ++ show v) tupleArgsV
                 in "(\\" ++ tupleArgs ++ " -> [" ++  intercalate "," (map (\(t', idx) -> "(" ++ jsonSerForType t' ++ ") v" ++ show idx) tupleArgsV) ++ "])"
+
 
 -- | Compile a JSON serializer for an Elm type definition
 -- TODO: handle the omit null case
