@@ -5,6 +5,7 @@ import Data.Proxy
 
 import Data.Aeson.Types (SumEncoding(..))
 import Data.Monoid ((<>))
+import Data.Maybe (fromMaybe)
 
 class IsElmDefinition a where
     compileElmDef :: Proxy a -> ETypeDef
@@ -91,13 +92,13 @@ data ESum
    } deriving (Show, Eq, Ord)
 
 unpackTupleType :: EType -> [EType]
-unpackTupleType t =
-    unfoldr (\ty ->
-                 case ty of
-                   Just (ETyApp (ETyApp (ETyTuple _) r) r') -> Just (r, Just r')
-                   Just tp -> Just (tp, Nothing)
-                   Nothing -> Nothing
-            ) (Just t)
+unpackTupleType et = fromMaybe [et] (extract et)
+    where
+        extract :: EType -> Maybe [EType]
+        extract ty = case ty of
+                         ETyApp (ETyTuple _) t -> return [t]
+                         ETyApp app@(ETyApp _ _) t -> (++ [t]) <$> extract app
+                         _ -> Nothing
 
 unpackToplevelConstr :: EType -> [EType]
 unpackToplevelConstr t =
