@@ -97,7 +97,7 @@ unpackTupleType et = fromMaybe [et] (extract et)
         extract :: EType -> Maybe [EType]
         extract ty = case ty of
                          ETyApp (ETyTuple _) t -> return [t]
-                         ETyApp app@(ETyApp _ _) t -> (++ [t]) <$> extract app
+                         ETyApp app@(ETyApp _ _) t -> fmap (++ [t]) (extract app)
                          _ -> Nothing
 
 unpackToplevelConstr :: EType -> [EType]
