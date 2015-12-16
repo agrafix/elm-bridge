@@ -7,7 +7,16 @@ cap "" = ""
 cap (x:xs) = toUpper x : xs
 
 fixReserved :: String -> String
-fixReserved x = case x of
-                    "in"   -> "in_"
-                    "type" -> "type_"
-                    _      -> x
+fixReserved x | x `elem` reservedWords = x ++ "_"
+              | otherwise = x
+    where
+        reservedWords = [ "if", "then", "else"
+                        , "case", "of"
+                        , "let", "in"
+                        , "type"
+                        , "module", "where"
+                        , "import", "as", "hiding", "exposing"
+                        , "port", "export", "foreign"
+                        , "perform"
+                        , "deriving"
+                        ]
