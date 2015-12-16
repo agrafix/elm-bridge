@@ -122,17 +122,14 @@ runDerive name vars mkBody =
                 PlainTV tv -> tv
                 KindedTV tv _ -> tv
 
-deriveAlias :: ElmOptions -> Name -> [TyVarBndr] -> Con -> Q [Dec]
-deriveAlias opts name vars c =
-    case c of
-      RecC _ conFields ->
-          let fields = listE $ map mkField conFields
-              omitNothing = omitNothingFields opts
-              isNewtype = makeNewtype opts
-          in runDerive name vars $ \typeName ->
+deriveAlias :: ElmOptions -> Name -> [TyVarBndr] -> [VarStrictType] -> Q [Dec]
+deriveAlias opts name vars conFields =
+        runDerive name vars $ \typeName ->
                 [|ETypeAlias (EAlias $typeName $fields omitNothing isNewtype)|]
-      _ -> fail "Can only derive records like CC { v :: Int, w :: a }"
     where
+      fields = listE $ map mkField conFields
+      omitNothing = omitNothingFields opts
+      isNewtype = makeNewtype opts
       mkField :: VarStrictType -> Q Exp
       mkField (fname, _, ftype) =
           [|(fldName, $fldType)|]
@@ -181,10 +178,10 @@ deriveElmDef opts name =
          DataD _ _ tyVars constrs _ ->
              case constrs of
                [] -> fail "Can not derive empty data decls"
-               [x] -> deriveAlias opts name tyVars x
+               [RecC _ conFields] -> deriveAlias opts name tyVars conFields
                _ -> deriveSum opts name tyVars constrs
-         NewtypeD _ _ tyVars constr _ ->
-             deriveAlias opts name tyVars constr
+         NewtypeD _ _ tyVars (RecC _ conFields) _ ->
+             deriveAlias opts name tyVars conFields
          TySynD _ vars otherTy ->
              deriveSynonym opts name vars otherTy
-         _ -> fail "Oops, can only derive data and newtype"
+         _ -> fail ("Oops, can only derive data and newtype, not this: " ++ show tyCon)
