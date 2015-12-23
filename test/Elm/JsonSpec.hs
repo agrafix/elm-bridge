@@ -73,7 +73,7 @@ barSer = unlines
     , "   Json.Encode.object"
     , "   [ (\"name\", localEncoder_a val.name)"
     , "   , (\"blablub\", Json.Encode.int val.blablub)"
-    , "   , (\"tuple\", (\\v1 v2 -> [(Json.Encode.int) v1,(Json.Encode.string) v2]) val.tuple)"
+    , "   , (\"tuple\", (\\(v1,v2) -> Json.Encode.list [(Json.Encode.int) v1,(Json.Encode.string) v2]) val.tuple)"
     , "   , (\"list\", (Json.Encode.list << List.map Json.Encode.bool) val.list)"
     , "   ]"
     ]
