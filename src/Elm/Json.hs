@@ -175,8 +175,8 @@ jsonSerForType' omitnull ty =
             xs ->
                 let tupleArgsV = zip xs ([1..] :: [Int])
                     tupleArgs =
-                        unwords $ map (\(_, v) -> "v" ++ show v) tupleArgsV
-                in "(\\" ++ tupleArgs ++ " -> [" ++  intercalate "," (map (\(t', idx) -> "(" ++ jsonSerForType t' ++ ") v" ++ show idx) tupleArgsV) ++ "])"
+                        intercalate "," $ map (\(_, v) -> "v" ++ show v) tupleArgsV
+                in "(\\(" ++ tupleArgs ++ ") -> Json.Encode.list [" ++  intercalate "," (map (\(t', idx) -> "(" ++ jsonSerForType t' ++ ") v" ++ show idx) tupleArgsV) ++ "])"
 
 
 -- | Compile a JSON serializer for an Elm type definition
