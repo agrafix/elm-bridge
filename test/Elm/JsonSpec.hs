@@ -62,8 +62,8 @@ fooParse :: String
 fooParse = unlines
     [ "jsonDecFoo : Json.Decode.Decoder ( Foo )"
     , "jsonDecFoo ="
-    , "   (\"name\" := Json.Decode.string) `Json.Decode.andThen` \\pname -> "
-    , "   (\"blablub\" := Json.Decode.int) `Json.Decode.andThen` \\pblablub -> "
+    , "   (\"name\" := Json.Decode.string) `Json.Decode.andThen` \\pname ->"
+    , "   (\"blablub\" := Json.Decode.int) `Json.Decode.andThen` \\pblablub ->"
     , "   Json.Decode.succeed {name = pname, blablub = pblablub}"
     ]
 
@@ -92,10 +92,10 @@ barParse :: String
 barParse = unlines
     [ "jsonDecBar : Json.Decode.Decoder a -> Json.Decode.Decoder ( Bar a )"
     , "jsonDecBar localDecoder_a ="
-    , "   (\"name\" := localDecoder_a) `Json.Decode.andThen` \\pname -> "
-    , "   (\"blablub\" := Json.Decode.int) `Json.Decode.andThen` \\pblablub -> "
-    , "   (\"tuple\" := Json.Decode.tuple2 (,) (Json.Decode.int) (Json.Decode.string)) `Json.Decode.andThen` \\ptuple -> "
-    , "   (\"list\" := Json.Decode.list (Json.Decode.bool)) `Json.Decode.andThen` \\plist -> "
+    , "   (\"name\" := localDecoder_a) `Json.Decode.andThen` \\pname ->"
+    , "   (\"blablub\" := Json.Decode.int) `Json.Decode.andThen` \\pblablub ->"
+    , "   (\"tuple\" := Json.Decode.tuple2 (,) (Json.Decode.int) (Json.Decode.string)) `Json.Decode.andThen` \\ptuple ->"
+    , "   (\"list\" := Json.Decode.list (Json.Decode.bool)) `Json.Decode.andThen` \\plist ->"
     , "   Json.Decode.succeed {name = pname, blablub = pblablub, tuple = ptuple, list = plist}"
     ]
 
@@ -104,8 +104,8 @@ bazParse = unlines
     [ "jsonDecBaz : Json.Decode.Decoder a -> Json.Decode.Decoder ( Baz a )"
     , "jsonDecBaz localDecoder_a ="
     , "    let jsonDecDictBaz = Dict.fromList"
-    , "            [ (\"Baz1\", Json.Decode.map Baz1 (   (\"foo\" := Json.Decode.int) `Json.Decode.andThen` \\pfoo ->     (\"qux\" := decodeMap (Json.Decode.int) (localDecoder_a)) `Json.Decode.andThen` \\pqux ->     Json.Decode.succeed {foo = pfoo, qux = pqux}))"
-    , "            , (\"Baz2\", Json.Decode.map Baz2 (   (Json.Decode.maybe (\"bar\" := Json.Decode.int)) `Json.Decode.andThen` \\pbar ->     (\"str\" := Json.Decode.string) `Json.Decode.andThen` \\pstr ->     Json.Decode.succeed {bar = pbar, str = pstr}))"
+    , "            [ (\"Baz1\", Json.Decode.map Baz1 (   (\"foo\" := Json.Decode.int) `Json.Decode.andThen` \\pfoo ->    (\"qux\" := decodeMap (Json.Decode.int) (localDecoder_a)) `Json.Decode.andThen` \\pqux ->    Json.Decode.succeed {foo = pfoo, qux = pqux}))"
+    , "            , (\"Baz2\", Json.Decode.map Baz2 (   (Json.Decode.maybe (\"bar\" := Json.Decode.int)) `Json.Decode.andThen` \\pbar ->    (\"str\" := Json.Decode.string) `Json.Decode.andThen` \\pstr ->    Json.Decode.succeed {bar = pbar, str = pstr}))"
     , "            , (\"Zob\", Json.Decode.map Zob (localDecoder_a))"
     , "            ]"
     , "    in  decodeSumObjectWithSingleField  \"Baz\" jsonDecDictBaz"
@@ -141,8 +141,8 @@ test1Parse :: String
 test1Parse = unlines
     [ "jsonDecTestComp : Json.Decode.Decoder a -> Json.Decode.Decoder ( TestComp a )"
     , "jsonDecTestComp localDecoder_a ="
-    , "   (\"t1\" := jsonDecChange (Json.Decode.int)) `Json.Decode.andThen` \\pt1 -> "
-    , "   (\"t2\" := jsonDecChange (localDecoder_a)) `Json.Decode.andThen` \\pt2 -> "
+    , "   (\"t1\" := jsonDecChange (Json.Decode.int)) `Json.Decode.andThen` \\pt1 ->"
+    , "   (\"t2\" := jsonDecChange (localDecoder_a)) `Json.Decode.andThen` \\pt2 ->"
     , "   Json.Decode.succeed {t1 = pt1, t2 = pt2}"
     ]
 

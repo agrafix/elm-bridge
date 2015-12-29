@@ -71,7 +71,7 @@ parseRecords newtyped fields = map mkField fields ++ ["   Json.Decode.succeed " 
            in   "   " ++ fldStart ++ "(\"" ++ fldName ++ "\" := "
                       ++ jsonParserForType' mh fldType
                       ++ fldEnd
-                      ++ ") `Json.Decode.andThen` \\p" ++ fldName ++ " -> "
+                      ++ ") `Json.Decode.andThen` \\p" ++ fldName ++ " ->"
 
 -- | Checks that all the arguments to the ESum are unary values
 allUnaries :: Bool -> [(String, Either [(String, EType)] [EType])] -> Maybe [String]
