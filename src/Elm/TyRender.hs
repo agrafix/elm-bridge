@@ -21,15 +21,14 @@ instance ElmRenderable EType where
           [t] -> renderSingleTy t
           xs -> "(" ++ intercalate ", " (map renderSingleTy xs) ++ ")"
         where
+          renderApp (ETyApp l r) = renderApp l ++ " " ++ renderElm r
+          renderApp x = renderElm x
           renderSingleTy typ =
               case typ of
                 ETyVar v -> renderElm v
                 ETyCon c -> renderElm c
                 ETyTuple _ -> error "Library Bug: This should never happen!"
-                ETyApp (ETyCon (ETCon "HashSet")) key -> renderSingleTy (ETyApp (ETyCon (ETCon "Set")) key)
-                ETyApp (ETyApp (ETyCon (ETCon mmap)) key) value
-                        | mmap `elem` ["Map", "HashMap"] -> "(Dict " ++ renderElm key ++ " " ++ renderElm value ++ ")"
-                ETyApp l r -> "(" ++ renderElm l ++ " " ++ renderElm r ++ ")"
+                ETyApp l r -> "(" ++ renderApp l ++ " " ++ renderElm r ++ ")"
 
 instance ElmRenderable ETCon where
     renderElm = tc_name
