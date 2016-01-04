@@ -40,9 +40,8 @@ jsonParserForType' mh ty =
                                                 then jsonParserForType t'
                                                 else "Json.Decode.maybe (" ++ jsonParserForType t' ++ ")"
       ETyApp (ETyCon (ETCon "Set")) t' -> "decodeSet (" ++ jsonParserForType t' ++ ")"
-      ETyApp (ETyCon (ETCon "HashSet")) t' -> "decodeSet (" ++ jsonParserForType t' ++ ")"
-      ETyApp (ETyApp (ETyCon (ETCon mmap)) key) value
-        | mmap `elem` ["Map", "HashMap"] -> "decodeMap (" ++ jsonParserForType key ++ ") (" ++ jsonParserForType value ++ ")"
+      ETyApp (ETyApp (ETyCon (ETCon "Dict")) (ETyCon (ETCon "String")) ) value -> "Json.Decode.dict (" ++ jsonParserForType value ++ ")"
+      ETyApp (ETyApp (ETyCon (ETCon "Dict")) key) value -> "decodeMap (" ++ jsonParserForType key ++ ") (" ++ jsonParserForType value ++ ")"
       _ ->
           case unpackTupleType ty of
             [] -> error $ "This should never happen. Failed to unpackTupleType: " ++ show ty
@@ -159,9 +158,7 @@ jsonSerForType' omitnull ty =
                                                 then jsonSerForType t'
                                                 else "(maybeEncode (" ++ jsonSerForType t' ++ "))"
       ETyApp (ETyCon (ETCon "Set")) t' -> "(encodeSet " ++ jsonSerForType t' ++ ")"
-      ETyApp (ETyCon (ETCon "HashSet")) t' -> "(encodeSet " ++ jsonSerForType t' ++ ")"
-      ETyApp (ETyApp (ETyCon (ETCon mmap)) key) value
-        | mmap `elem` ["Map", "HashMap"] -> "encodeMap (" ++ jsonSerForType key ++ ") (" ++ jsonSerForType value ++ ")"
+      ETyApp (ETyApp (ETyCon (ETCon "Dict")) key) value -> "encodeMap (" ++ jsonSerForType key ++ ") (" ++ jsonSerForType value ++ ")"
       _ ->
           case unpackTupleType ty of
             [] -> error $ "This should never happen. Failed to unpackTupleType: " ++ show ty
