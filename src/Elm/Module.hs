@@ -27,7 +27,7 @@ makeElmModule moduleName defs = unlines (
     ]) ++ makeModuleContent defs
 
 makeModuleContent :: [DefineElm] -> String
-makeModuleContent = makeModuleContentWithAlterations id
+makeModuleContent = makeModuleContentWithAlterations defaultAlterations
 
 makeModuleContentWithAlterations :: (ETypeDef -> ETypeDef) -> [DefineElm] -> String
 makeModuleContentWithAlterations alt = intercalate "\n\n" . map mkDef
@@ -44,4 +44,24 @@ recAlterType f td = case td of
     where
         f' (ETyApp a b) = f (ETyApp (f' a) (f' b))
         f' x = f x
+
+defaultAlterations :: ETypeDef -> ETypeDef
+defaultAlterations = recAlterType $ \t -> case t of
+                                  ETyApp (ETyCon (ETCon "HashSet")) s -> checkSet s
+                                  ETyApp (ETyCon (ETCon "Set")) s -> checkSet s
+                                  ETyApp (ETyApp (ETyCon (ETCon "HashMap")) k) v -> checkMap k v
+                                  ETyApp (ETyApp (ETyCon (ETCon "THashMap")) k) v -> checkMap k v
+                                  ETyApp (ETyApp (ETyCon (ETCon "Map")) k) v -> checkMap k v
+                                  ETyCon (ETCon "Integer") -> ETyCon (ETCon "Int")
+                                  _ -> t
+    where
+        isString (ETyCon (ETCon "String")) = True
+        isString _ = False
+        isComparable (ETyCon (ETCon n)) = n `elem` ["String", "Int"]
+        isComparable _ = False -- TODO check what Elm actually uses
+        tc = ETyCon . ETCon
+        checkMap k v | isString k = ETyApp (ETyApp (tc "Dict") k) v
+                     | otherwise  = ETyApp (tc "List") (ETyApp (ETyApp (ETyTuple 2) k) v)
+        checkSet s | isComparable s = ETyApp (ETyCon (ETCon "Set")) s
+                   | otherwise = ETyApp (ETyCon (ETCon "List")) s
 
