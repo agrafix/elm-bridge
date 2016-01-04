@@ -217,8 +217,12 @@ jsonSerForDef etd =
               mkEncodeList [arg] = "encodeValue (" ++ jsonSerForType arg ++ " v1)"
               mkEncodeList args =  "encodeValue (Json.Encode.list [" ++ numargs jsonSerForType args ++ "])"
     where
+      fname name = "jsonEnc" ++ et_name name
+      makeType name = fname name ++ " : " ++ intercalate " -> " (map (mkLocalEncoder . tv_name) (et_args name) ++ [unwords (et_name name : map tv_name (et_args name)) , "Value"])
+      mkLocalEncoder n = "(" ++ n ++ " -> Value)"
       makeName name newtyping =
-           "jsonEnc" ++ et_name name ++ " "
+           makeType name ++ "\n"
+           ++ fname name ++ " "
            ++ unwords (map (\tv -> "localEncoder_" ++ tv_name tv) $ et_args name)
            ++ if newtyping
                   then " (" ++ et_name name ++ " val)"

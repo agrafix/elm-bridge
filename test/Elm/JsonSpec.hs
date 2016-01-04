@@ -56,7 +56,7 @@ $(deriveElmDef defaultOptions { fieldLabelModifier = drop 1 . map toLower } ''Ba
 $(deriveElmDef defaultOptions { fieldLabelModifier = drop 4 . map toLower, sumEncoding = TaggedObject "tag" "value" } ''Qux)
 
 fooSer :: String
-fooSer = "jsonEncFoo  val =\n   Json.Encode.object\n   [ (\"name\", Json.Encode.string val.name)\n   , (\"blablub\", Json.Encode.int val.blablub)\n   ]\n"
+fooSer = "jsonEncFoo : Foo -> Value\njsonEncFoo  val =\n   Json.Encode.object\n   [ (\"name\", Json.Encode.string val.name)\n   , (\"blablub\", Json.Encode.int val.blablub)\n   ]\n"
 
 fooParse :: String
 fooParse = unlines
@@ -69,7 +69,8 @@ fooParse = unlines
 
 barSer :: String
 barSer = unlines
-    [ "jsonEncBar localEncoder_a val ="
+    [ "jsonEncBar : (a -> Value) -> Bar a -> Value"
+    , "jsonEncBar localEncoder_a val ="
     , "   Json.Encode.object"
     , "   [ (\"name\", localEncoder_a val.name)"
     , "   , (\"blablub\", Json.Encode.int val.blablub)"
@@ -80,7 +81,8 @@ barSer = unlines
 
 bazSer :: String
 bazSer = unlines
-    [ "jsonEncBaz localEncoder_a val ="
+    [ "jsonEncBaz : (a -> Value) -> Baz a -> Value"
+    , "jsonEncBaz localEncoder_a val ="
     , "    let keyval v = case v of"
     , "                    Baz1 vs -> (\"Baz1\", encodeObject [(\"foo\", Json.Encode.int vs.foo), (\"qux\", (jsonEncMap (Json.Encode.int) (localEncoder_a)) vs.qux)])"
     , "                    Baz2 vs -> (\"Baz2\", encodeObject [(\"bar\", (maybeEncode (Json.Encode.int)) vs.bar), (\"str\", Json.Encode.string vs.str)])"
@@ -130,7 +132,8 @@ someOptsParse = unlines
 
 someOptsSer :: String
 someOptsSer = unlines
-    [ "jsonEncSomeOpts localEncoder_a val ="
+    [ "jsonEncSomeOpts : (a -> Value) -> SomeOpts a -> Value"
+    , "jsonEncSomeOpts localEncoder_a val ="
     , "    let keyval v = case v of"
     , "                    Okay v1 -> (\"Okay\", encodeValue (Json.Encode.int v1))"
     , "                    NotOkay v1 -> (\"NotOkay\", encodeValue (localEncoder_a v1))"
@@ -166,7 +169,8 @@ unaryBParse = unlines
 
 unaryASer :: String
 unaryASer = unlines
-    [ "jsonEncUnaryA  val ="
+    [ "jsonEncUnaryA : UnaryA -> Value"
+    , "jsonEncUnaryA  val ="
     , "    let keyval v = case v of"
     , "                    UnaryA1  -> (\"UnaryA1\", encodeValue (Json.Encode.list []))"
     , "                    UnaryA2  -> (\"UnaryA2\", encodeValue (Json.Encode.list []))"
@@ -175,7 +179,8 @@ unaryASer = unlines
 
 unaryBSer :: String
 unaryBSer = unlines
-    [ "jsonEncUnaryB  val ="
+    [ "jsonEncUnaryB : UnaryB -> Value"
+    , "jsonEncUnaryB  val ="
     , "    case val of"
     , "        UnaryB1 -> Json.Encode.string \"UnaryB1\""
     , "        UnaryB2 -> Json.Encode.string \"UnaryB2\""
