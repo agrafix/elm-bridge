@@ -1,8 +1,31 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
+{-| This module should be used to derive the Elm instance alongside the
+ JSON ones. The prefered usage is to convert statements such as :
+
+> $(deriveJSON defaultOptions{fieldLabelModifier = drop 4, constructorTagModifier = map toLower} ''D)
+
+ into:
+
+> $(deriveBoth defaultOptions{fieldLabelModifier = drop 4, constructorTagModifier = map toLower} ''D)
+
+ Which will derive both the @aeson@ and @elm-bridge@ instances at the same
+ time.
+-}
+
 module Elm.Derive
-    ( deriveElmDef, deriveBoth, defaultOptions, defaultOptionsDropLower, ElmOptions(..), toAesonOptions, toElmOptions, A.SumEncoding(..) )
+    ( -- * Options
+      ElmOptions(..)
+    , toAesonOptions
+    , toElmOptions
+    , A.SumEncoding(..)
+    , defaultOptions
+    , defaultOptionsDropLower
+      -- * Template haskell functions
+    , deriveElmDef
+    , deriveBoth
+    )
 where
 
 import Elm.TyRep
@@ -16,9 +39,12 @@ import Data.Char (toLower)
 import Control.Applicative
 import Prelude
 
+-- | This type is almost identical to that in the `aeson` module, in order
+-- to maximize compatiblity. The only difference is the added 'makeNewType'
+-- member.
 data ElmOptions = ElmOptions
     { fieldLabelModifier :: String -> String
-      -- ^ Function applied to field labels. 
+      -- ^ Function applied to field labels.
       -- Handy for removing common record prefixes for example.
     , constructorTagModifier :: String -> String
       -- ^ Function applied to constructor tags which could be handy
@@ -36,7 +62,8 @@ data ElmOptions = ElmOptions
       -- ^ Specifies how to encode constructors of a sum datatype.
     , makeNewtype  :: Bool
       -- ^ Elm specific option, generates a "type" instead of a "type alias".
-      -- Doesn't make sense for sum types
+      -- Doesn't make sense for sum types, but is useful to break recursive
+      -- references.
     }
 
 toAesonOptions :: ElmOptions -> A.Options
@@ -45,6 +72,8 @@ toAesonOptions (ElmOptions flm ctm an on se _) = A.Options flm ctm an on se
 toElmOptions :: A.Options -> ElmOptions
 toElmOptions (A.Options flm ctm an on se) = ElmOptions flm ctm an on se False
 
+-- | Note that This default set of options is distinct from that in
+-- the @aeson@ package.
 defaultOptions :: ElmOptions
 defaultOptions = ElmOptions { sumEncoding             = ObjectWithSingleField
                             , fieldLabelModifier      = id
@@ -54,19 +83,22 @@ defaultOptions = ElmOptions { sumEncoding             = ObjectWithSingleField
                             , makeNewtype             = False
                             }
 
+{-| This generates a default set of options. The parameter represents the
+number of characters that must be dropped from the Haskell field names.
+The first letter of the field is then converted to lowercase, ie:
+
+> data Foo = Foo { _fooBarQux :: Int }
+> $(deriveBoth (defaultOptionsDropLower 4) ''Foo)
+
+Will be encoded as:
+
+> {"barQux"=12}
+-}
 defaultOptionsDropLower :: Int -> ElmOptions
 defaultOptionsDropLower n = defaultOptions { fieldLabelModifier = lower . drop n }
     where
         lower "" = ""
         lower (x:xs) = toLower x : xs
-
-conCompiler :: String -> String
-conCompiler s =
-    case s of
-      "Double" -> "Float"
-      "Text" -> "String"
-      "Vector" -> "List"
-      _ -> s
 
 compileType :: Type -> Q Exp
 compileType ty =
@@ -80,7 +112,7 @@ compileType ty =
           compileType ty'
       AppT a b -> [|ETyApp $(compileType a) $(compileType b)|]
       ConT name ->
-          let n = conCompiler $ nameBase name
+          let n = nameBase name
           in  [|ETyCon (ETCon n)|]
       _ -> fail $ "Unsupported type: " ++ show ty
 
@@ -168,9 +200,15 @@ deriveSynonym _ name vars otherT =
     where
       otherType = compileType otherT
 
+-- | Equivalent to running both 'deriveJSON' and 'deriveElmDef' with the
+-- same options, so as to ensure the code on the Haskell and Elm size is
+-- synchronized.
 deriveBoth :: ElmOptions -> Name -> Q [Dec]
 deriveBoth o n = (++) <$> deriveElmDef o n <*> deriveJSON (toAesonOptions o) n
 
+-- | Just derive the @elm-bridge@ definitions for generating the
+-- serialization/deserialization code. It must be kept synchronized with
+-- the Haskell code manually.
 deriveElmDef :: ElmOptions -> Name -> Q [Dec]
 deriveElmDef opts name =
     do TyConI tyCon <- reify name

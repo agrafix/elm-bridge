@@ -1,5 +1,9 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-|
+Functions in this module are used to generate Elm modules. Note that the generated modules depend on the @bartavelle/json-helpers@ package.
+
+-}
 module Elm.Module where
 
 import Data.Proxy
@@ -14,21 +18,30 @@ import Elm.Json
 data DefineElm
    = forall a. IsElmDefinition a => DefineElm (Proxy a)
 
--- | Compile an Elm module
-makeElmModule :: String -> [DefineElm] -> String
+-- | Creates an Elm module. This will use the default type conversion rules (to
+-- convert @Vector@ to @List@, @HashMap a b@ to @List (a,b)@, etc.).
+makeElmModule :: String -- ^ Module name
+              -> [DefineElm] -- ^ List of definitions to be included in the module
+              -> String
 makeElmModule moduleName defs = unlines (
     [ "module " ++ moduleName ++ " where"
     , ""
     , "import Json.Decode"
     , "import Json.Decode exposing ((:=))"
     , "import Json.Encode"
+    , "import Json.Helpers exposing (..)"
     , ""
     , ""
     ]) ++ makeModuleContent defs
 
+
+-- | Generates the content of a module. You will be responsible for
+-- including the required Elm headers. This uses the default type
+-- conversion rules.
 makeModuleContent :: [DefineElm] -> String
 makeModuleContent = makeModuleContentWithAlterations defaultAlterations
 
+-- | Generates the content of a module, using custom type conversion rules.
 makeModuleContentWithAlterations :: (ETypeDef -> ETypeDef) -> [DefineElm] -> String
 makeModuleContentWithAlterations alt = intercalate "\n\n" . map mkDef
     where
@@ -36,6 +49,15 @@ makeModuleContentWithAlterations alt = intercalate "\n\n" . map mkDef
           let def = alt (compileElmDef proxy)
           in renderElm def ++ "\n" ++ jsonParserForDef def ++ "\n" ++ jsonSerForDef def ++ "\n"
 
+{-| A helper function that will recursively traverse type definitions and let you convert types.
+
+> myAlteration : ETypeDef -> ETypeDef
+> myAlteration = recAlterType $ \t -> case t of
+>                   ETyCon (ETCon "Integer") -> ETyCon (ETCon "Int")
+>                   ETyCon (ETCon "Text")    -> ETyCon (ETCon "String")
+>                   _                        -> t
+
+-}
 recAlterType :: (EType -> EType) -> ETypeDef -> ETypeDef
 recAlterType f td = case td of
                      ETypeAlias a -> ETypeAlias (a { ea_fields = map (second f') (ea_fields a) })
@@ -45,15 +67,28 @@ recAlterType f td = case td of
         f' (ETyApp a b) = f (ETyApp (f' a) (f' b))
         f' x = f x
 
+{-| A default set of type conversion rules:
+
+ * @HashSet a@, @Set a@ -> if @a@ is comparable, then @Set a@, else @List a@
+ * @HashMap String v@, @Map String v@ -> @Dict String v@
+ * @HashMap k v@, @Map k v@ -> @List (k, v)@
+ * @Integer@ -> @Int@
+ * @Text@ -> @String@
+ * @Vector@ -> @List@
+ * @Double@ -> @Float@
+-}
 defaultAlterations :: ETypeDef -> ETypeDef
 defaultAlterations = recAlterType $ \t -> case t of
-                                  ETyApp (ETyCon (ETCon "HashSet")) s -> checkSet s
-                                  ETyApp (ETyCon (ETCon "Set")) s -> checkSet s
-                                  ETyApp (ETyApp (ETyCon (ETCon "HashMap")) k) v -> checkMap k v
+                                  ETyApp (ETyCon (ETCon "HashSet")) s             -> checkSet s
+                                  ETyApp (ETyCon (ETCon "Set")) s                 -> checkSet s
+                                  ETyApp (ETyApp (ETyCon (ETCon "HashMap")) k) v  -> checkMap k v
                                   ETyApp (ETyApp (ETyCon (ETCon "THashMap")) k) v -> checkMap k v
-                                  ETyApp (ETyApp (ETyCon (ETCon "Map")) k) v -> checkMap k v
-                                  ETyCon (ETCon "Integer") -> ETyCon (ETCon "Int")
-                                  _ -> t
+                                  ETyApp (ETyApp (ETyCon (ETCon "Map")) k) v      -> checkMap k v
+                                  ETyCon (ETCon "Integer")                        -> ETyCon (ETCon "Int")
+                                  ETyCon (ETCon "Text")                           -> ETyCon (ETCon "String")
+                                  ETyCon (ETCon "Vector")                         -> ETyCon (ETCon "List")
+                                  ETyCon (ETCon "Double")                         -> ETyCon (ETCon "Float")
+                                  _                                               -> t
     where
         isString (ETyCon (ETCon "String")) = True
         isString _ = False

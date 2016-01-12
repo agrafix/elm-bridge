@@ -1,6 +1,10 @@
 {- |
 This module implements a generator for JSON serialisers and parsers of arbitrary elm types.
-Please note: It's still very hacky and might not work for all possible elm types yet.
+
+It is highly recommended to either only use the functions of "Elm.Module", or to use the functions in this module
+after having modified the 'ETypeDef' arguments with functions such as 'defaultAlterations'.
+
+The reason is that Elm types might have an equivalent on the Haskell side and should be converted (ie. 'Text' -> 'String', 'Vector' -> 'List').
 -}
 module Elm.Json
     ( jsonParserForDef
@@ -138,9 +142,10 @@ jsonParserForDef etd =
       decoderTypeEnd name = unwords ("Json.Decode.Decoder" : "(" : et_name name : map tv_name (et_args name) ++ [")"])
       makeName name = unwords (funcname name : prependTypes "localDecoder_" name)
 
--- | Compile a JSON serializer for an Elm type
---
--- TODO : omitting null values on serialization ..
+{-| Compile a JSON serializer for an Elm type.
+
+The 'omitNothingFields' option is currently not implemented!
+-}
 jsonSerForType :: EType -> String
 jsonSerForType = jsonSerForType' False
 

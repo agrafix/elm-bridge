@@ -1,3 +1,4 @@
+{-| This module should not usually be imported. -}
 module Elm.TyRender where
 
 import Elm.TyRep
