@@ -28,7 +28,7 @@ data Foo
    , f_blablub :: Int
    } deriving (Show, Eq)
 
-deriveElmDef defaultOpts ''Foo
+deriveBoth defaultOptions ''Foo
 
 main :: IO ()
 main =
@@ -46,6 +46,7 @@ module Foo where
 import Json.Decode
 import Json.Decode exposing ((:=))
 import Json.Encode
+import Json.Helpers exposing (..)
 
 
 type alias Foo  =
@@ -53,11 +54,13 @@ type alias Foo  =
    , f_blablub: Int
    }
 
-jsonDecFoo  =
+jsonDecFoo : Json.Decode.Decoder ( Foo )
+jsonDecFoo =
    ("f_name" := Json.Decode.string) `Json.Decode.andThen` \pf_name ->
    ("f_blablub" := Json.Decode.int) `Json.Decode.andThen` \pf_blablub ->
    Json.Decode.succeed {f_name = pf_name, f_blablub = pf_blablub}
 
+jsonEncFoo : Foo -> Value
 jsonEncFoo  val =
    Json.Encode.object
    [ ("f_name", Json.Encode.string val.f_name)

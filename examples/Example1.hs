@@ -11,7 +11,7 @@ data Foo
    , f_blablub :: Int
    } deriving (Show, Eq)
 
-deriveElmDef defaultOpts ''Foo
+deriveBoth defaultOptions ''Foo
 
 main :: IO ()
 main =
