@@ -11,6 +11,8 @@ Hackage: [elm-bridge](http://hackage.haskell.org/package/elm-bridge)
 
 Building the bridge from [Haskell](http://haskell.org) to [Elm](http://elm-lang.org) and back. Define types once, use on both sides and enjoy easy (de)serialisation. Cheers!
 
+Note that the [bartavelle/json-helpers](http://package.elm-lang.org/packages/bartavelle/json-helpers/latest/) package, with version >= 1.1.0, is expected by the generated Elm modules.
+
 ## Usage
 
 ```haskell
