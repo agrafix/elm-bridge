@@ -30,8 +30,8 @@ data Sum10 a = Sum10A a | Sum10B (Maybe a) | Sum10C a a | Sum10D { _s10foo :: a 
 data Sum11 a = Sum11A a | Sum11B (Maybe a) | Sum11C a a | Sum11D { _s11foo :: a } | Sum11E { _s11bar :: Int, _s11baz :: Int } deriving Show
 data Sum12 a = Sum12A a | Sum12B (Maybe a) | Sum12C a a | Sum12D { _s12foo :: a } | Sum12E { _s12bar :: Int, _s12baz :: Int } deriving Show
 
-$(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = False, makeNewtype = True } ''Record1)
-$(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = True , makeNewtype = True } ''Record2)
+$(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = False } ''Record1)
+$(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = True  } ''Record2)
 
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = False, allNullaryToStringTag = False, sumEncoding = TaggedObject "tag" "content" } ''Sum01)
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = True , allNullaryToStringTag = False, sumEncoding = TaggedObject "tag" "content" } ''Sum02)
@@ -144,7 +144,7 @@ elmModuleContent = unlines
     , "    let remix = Json.Decode.decodeString Json.Decode.value"
     , "    in assertEqual (remix a) (remix b)"
     , ""
-    , makeModuleContent
+    , makeModuleContentWithAlterations (newtypeAliases ["Record1", "Record2"] . defaultAlterations)
         [ DefineElm (Proxy :: Proxy (Record1 a))
         , DefineElm (Proxy :: Proxy (Record2 a))
         , DefineElm (Proxy :: Proxy (Sum01 a))

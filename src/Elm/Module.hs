@@ -68,6 +68,14 @@ recAlterType f td = case td of
         f' (ETyApp a b) = f (ETyApp (f' a) (f' b))
         f' x = f x
 
+-- | Given a list of type names, will @newtype@ all the matching type
+-- definitions.
+newtypeAliases :: [String] -> ETypeDef -> ETypeDef
+newtypeAliases nts (ETypeAlias e) = ETypeAlias $ if et_name (ea_name e) `elem` nts
+                                                     then e { ea_newtype = True }
+                                                     else e
+newtypeAliases _ x = x
+
 {-| A default set of type conversion rules:
 
  * @HashSet a@, @Set a@ -> if @a@ is comparable, then @Set a@, else @List a@
