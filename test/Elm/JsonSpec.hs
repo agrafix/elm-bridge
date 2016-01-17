@@ -36,7 +36,7 @@ data Change a = Change { _before :: a, _after :: a }
 
 data Baz a = Baz1 { _foo :: Int, _qux :: M.Map Int a }
            | Baz2 { _bar :: Maybe Int, _str :: String }
-           | Zob a
+           | Testing (Baz a)
 
 data TestComp a = TestComp { _t1 :: Change Int
                            , _t2 :: Change a
@@ -86,7 +86,7 @@ bazSer = unlines
     , "    let keyval v = case v of"
     , "                    Baz1 vs -> (\"Baz1\", encodeObject [(\"foo\", Json.Encode.int vs.foo), (\"qux\", (jsonEncMap (Json.Encode.int) (localEncoder_a)) vs.qux)])"
     , "                    Baz2 vs -> (\"Baz2\", encodeObject [(\"bar\", (maybeEncode (Json.Encode.int)) vs.bar), (\"str\", Json.Encode.string vs.str)])"
-    , "                    Zob v1 -> (\"Zob\", encodeValue (localEncoder_a v1))"
+    , "                    Testing v1 -> (\"Testing\", encodeValue ((jsonEncBaz (localEncoder_a)) v1))"
     , "    in encodeSumObjectWithSingleField keyval val"
     ]
 
@@ -108,7 +108,7 @@ bazParse = unlines
     , "    let jsonDecDictBaz = Dict.fromList"
     , "            [ (\"Baz1\", Json.Decode.map Baz1 (   (\"foo\" := Json.Decode.int) `Json.Decode.andThen` \\pfoo ->    (\"qux\" := jsonDecMap (Json.Decode.int) (localDecoder_a)) `Json.Decode.andThen` \\pqux ->    Json.Decode.succeed {foo = pfoo, qux = pqux}))"
     , "            , (\"Baz2\", Json.Decode.map Baz2 (   (Json.Decode.maybe (\"bar\" := Json.Decode.int)) `Json.Decode.andThen` \\pbar ->    (\"str\" := Json.Decode.string) `Json.Decode.andThen` \\pstr ->    Json.Decode.succeed {bar = pbar, str = pstr}))"
-    , "            , (\"Zob\", Json.Decode.map Zob (localDecoder_a))"
+    , "            , (\"Testing\", Json.Decode.map Testing (jsonDecBaz (localDecoder_a)))"
     , "            ]"
     , "    in  decodeSumObjectWithSingleField  \"Baz\" jsonDecDictBaz"
     ]
