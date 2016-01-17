@@ -28,7 +28,7 @@ makeElmModule moduleName defs = unlines (
     , ""
     , "import Json.Decode"
     , "import Json.Decode exposing ((:=))"
-    , "import Json.Encode"
+    , "import Json.Encode exposing (Value)"
     , "-- The following module comes from bartavelle/json-helpers"
     , "import Json.Helpers exposing (..)"
     , ""
