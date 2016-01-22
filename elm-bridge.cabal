@@ -1,5 +1,5 @@
 name:                elm-bridge
-version:             0.2.1
+version:             0.2.1.0
 synopsis:            Derive Elm types from Haskell types
 description:         Building the bridge from Haskell to Elm and back. Define types once,
                      use on both sides and enjoy easy (de)serialisation. Cheers!
