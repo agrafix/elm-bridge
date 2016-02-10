@@ -45,6 +45,9 @@ defaultOptions = A.Options { A.sumEncoding             = A.ObjectWithSingleField
                            , A.constructorTagModifier  = id
                            , A.allNullaryToStringTag   = True
                            , A.omitNothingFields       = False
+#if MIN_VERSION_aeson(0,10,0)
+                           , A.unwrapUnaryRecords      = False
+#endif
                            }
 
 {-| This generates a default set of options. The parameter represents the

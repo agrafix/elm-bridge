@@ -31,9 +31,7 @@ library
   other-modules:       Elm.Utils
   build-depends:       base >= 4.7 && < 5,
                        template-haskell,
--- There is a known bug in aeson 0.10.0.0 that is triggered by the derivation
--- function in some cases: https://github.com/bos/aeson/issues/293
-                       aeson  == 0.9.*
+                       aeson  >= 0.9
   default-language:    Haskell2010
 
 test-suite end-to-end-tests
