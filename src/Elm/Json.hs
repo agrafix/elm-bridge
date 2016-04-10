@@ -98,6 +98,11 @@ jsonParserForDef etd =
           : (makeName name ++ " =")
           : parseRecords (if newtyping then Just name else Nothing) fields
           )
+      ETypeSum (ESum name [(oname, args)] (SumEncoding' encodingType) _ _) -> unlines
+          ( decoderType name
+          : (makeName name ++ " =")
+          : ["    " ++ mkDecoder oname args]
+          )
       ETypeSum (ESum name opts (SumEncoding' encodingType) _ unarystring) ->
             decoderType name ++ "\n" ++
             makeName name ++ " =" ++
@@ -122,25 +127,25 @@ jsonParserForDef etd =
                               TaggedObject _ _ -> "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " (map (show . fst) $ filter (isLeft . snd) opts) ++ "]")
                               _ -> ""
             dictEntry (oname, args) = "(" ++ show oname ++ ", " ++ mkDecoder oname args ++ ")"
-            mkDecoder oname (Left args)  =  "Json.Decode.map "
-                                         ++ cap oname
-                                         ++ " ("
-                                         ++ unwords (parseRecords Nothing args)
-                                         ++ ")"
-            mkDecoder oname (Right args) = unwords ( decodeFunction
-                                                   : cap oname
-                                                   : map (\t' -> "(" ++ jsonParserForType t' ++ ")") args
-                                                   )
-                where decodeFunction = case length args of
-                                           0 -> "Json.Decode.succeed"
-                                           1 -> "Json.Decode.map"
-                                           n -> "Json.Decode.tuple" ++ show n
     where
       funcname name = "jsonDec" ++ et_name name
       prependTypes str = map (\tv -> str ++ tv_name tv) . et_args
       decoderType name = funcname name ++ " : " ++ intercalate " -> " (prependTypes "Json.Decode.Decoder " name ++ [decoderTypeEnd name])
       decoderTypeEnd name = unwords ("Json.Decode.Decoder" : "(" : et_name name : map tv_name (et_args name) ++ [")"])
       makeName name = unwords (funcname name : prependTypes "localDecoder_" name)
+      mkDecoder oname (Left args)  =  "Json.Decode.map "
+                                   ++ cap oname
+                                   ++ " ("
+                                   ++ unwords (parseRecords Nothing args)
+                                   ++ ")"
+      mkDecoder oname (Right args) = unwords ( decodeFunction
+                                             : cap oname
+                                             : map (\t' -> "(" ++ jsonParserForType t' ++ ")") args
+                                             )
+          where decodeFunction = case length args of
+                                     0 -> "Json.Decode.succeed"
+                                     1 -> "Json.Decode.map"
+                                     n -> "Json.Decode.tuple" ++ show n
 
 {-| Compile a JSON serializer for an Elm type.
 
@@ -194,17 +199,24 @@ jsonSerForDef etd =
           ++ "\n   ]\n"
       ETypeSum (ESum name opts (SumEncoding' se) _ unarystring) ->
         case allUnaries unarystring opts of
-            Nothing -> defaultEncoding
+            Nothing -> defaultEncoding opts
             Just strs -> unaryEncoding strs
           where
               encodeFunction = case se of
                                    ObjectWithSingleField -> "encodeSumObjectWithSingleField"
                                    TwoElemArray -> "encodeSumTwoElementArray"
                                    TaggedObject k c -> unwords ["encodeSumTaggedObject", show k, show c]
-              defaultEncoding = unlines (
+              defaultEncoding [(oname, Right args)] = unlines $
+                [ makeType name
+                , fname name ++ " " 
+                    ++ unwords (map (\tv -> "localEncoder_" ++ tv_name tv) $ et_args name)
+                    ++ "(" ++ cap oname  ++ " " ++ argList args ++ ") ="
+                , "    " ++ mkEncodeList args
+                ]
+              defaultEncoding os = unlines (
                 ( makeName name False ++ " =")
                 : "    let keyval v = case v of"
-                :  (map (replicate 12 ' ' ++) (map mkcase opts))
+                :  (map (replicate 12 ' ' ++) (map mkcase os))
                 ++ [ "    " ++ unwords ["in", encodeFunction, "keyval", "val"] ]
                 )
               unaryEncoding names = unlines (
@@ -213,14 +225,14 @@ jsonSerForDef etd =
                 ] ++ map (\n -> replicate 8 ' ' ++ cap n ++ " -> Json.Encode.string " ++ show n) names
                 )
               mkcase :: (String, Either [(String, EType)] [EType]) -> String
-              mkcase (oname, Right args) = replicate 8 ' ' ++ cap oname ++ " " ++ argList args ++ " -> (" ++ show oname ++ ", " ++ mkEncodeList args ++ ")"
+              mkcase (oname, Right args) = replicate 8 ' ' ++ cap oname ++ " " ++ argList args ++ " -> (" ++ show oname ++ ", encodeValue (" ++ mkEncodeList args ++ "))"
               mkcase (oname, Left args) = replicate 8 ' ' ++ cap oname ++ " vs -> (" ++ show oname ++ ", " ++ mkEncodeObject args ++ ")"
               argList a = unwords $ map (\i -> "v" ++ show i ) [1 .. length a]
               numargs :: (a -> String) -> [a] -> String
               numargs f = intercalate ", " . zipWith (\n a -> f a ++ " v" ++ show n)  ([1..] :: [Int])
               mkEncodeObject args = "encodeObject [" ++ intercalate ", " (map (\(n,t) -> "(" ++ show n ++ ", " ++ jsonSerForType t ++ " vs." ++ fixReserved n ++ ")") args) ++ "]"
-              mkEncodeList [arg] = "encodeValue (" ++ jsonSerForType arg ++ " v1)"
-              mkEncodeList args =  "encodeValue (Json.Encode.list [" ++ numargs jsonSerForType args ++ "])"
+              mkEncodeList [arg] = jsonSerForType arg ++ " v1"
+              mkEncodeList args =  "Json.Encode.list [" ++ numargs jsonSerForType args ++ "]"
     where
       fname name = "jsonEnc" ++ et_name name
       makeType name = fname name ++ " : " ++ intercalate " -> " (map (mkLocalEncoder . tv_name) (et_args name) ++ [unwords (et_name name : map tv_name (et_args name)) , "Value"])
