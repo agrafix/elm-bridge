@@ -98,21 +98,17 @@ jsonParserForDef etd =
           : (makeName name ++ " =")
           : parseRecords (if newtyping then Just name else Nothing) fields
           )
-      ETypeSum (ESum name [(oname, args)] (SumEncoding' encodingType) _ _) -> unlines
-          ( decoderType name
-          : (makeName name ++ " =")
-          : ["    " ++ mkDecoder oname args]
-          )
       ETypeSum (ESum name opts (SumEncoding' encodingType) _ unarystring) ->
             decoderType name ++ "\n" ++
             makeName name ++ " =" ++
                 case allUnaries unarystring opts of
                     Just names -> " " ++ deriveUnaries names
-                    Nothing    -> "\n" ++ encodingDictionnary ++ isObjectSet ++ "\n    in  " ++ declLine ++ "\n"
+                    Nothing    -> "\n" ++ encodingDictionary opts ++ isObjectSet ++ "\n" ++ declLine opts ++ "\n"
           where
             tab n s = replicate n ' ' ++ s
             typename = et_name name
-            declLine = case encodingType of
+            declLine [o] = ""
+            declLine os = "    in  " ++ case encodingType of
                            ObjectWithSingleField -> unwords [ "decodeSumObjectWithSingleField ", show typename, dictName]
                            TwoElemArray          -> unwords [ "decodeSumTwoElemArray ", show typename, dictName ]
                            TaggedObject tg el    -> unwords [ "decodeSumTaggedObject", show typename, show tg, show el, dictName, isObjectSetName ]
@@ -122,30 +118,31 @@ jsonParserForDef etd =
                 [ "decodeSumUnaries " ++ show typename ++ " " ++ dictName
                 , dictName ++ " = Dict.fromList [" ++ intercalate ", " (map (\s -> "(" ++ show s ++ ", " ++ cap s ++ ")") strs ) ++ "]"
                 ]
-            encodingDictionnary = tab 4 "let " ++ dictName ++ " = Dict.fromList\n" ++ tab 12 "[ " ++ intercalate ("\n" ++ replicate 12 ' ' ++ ", ") (map dictEntry opts) ++ "\n" ++ tab 12 "]"
+            encodingDictionary [(oname, args)] = "    " ++ mkDecoder oname args
+            encodingDictionary os = tab 4 "let " ++ dictName ++ " = Dict.fromList\n" ++ tab 12 "[ " ++ intercalate ("\n" ++ replicate 12 ' ' ++ ", ") (map dictEntry os) ++ "\n" ++ tab 12 "]"
             isObjectSet = case encodingType of
                               TaggedObject _ _ -> "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " (map (show . fst) $ filter (isLeft . snd) opts) ++ "]")
                               _ -> ""
             dictEntry (oname, args) = "(" ++ show oname ++ ", " ++ mkDecoder oname args ++ ")"
+            mkDecoder oname (Left args)  =  "Json.Decode.map "
+                                         ++ cap oname
+                                         ++ " ("
+                                         ++ unwords (parseRecords Nothing args)
+                                         ++ ")"
+            mkDecoder oname (Right args) = unwords ( decodeFunction
+                                                   : cap oname
+                                                   : map (\t' -> "(" ++ jsonParserForType t' ++ ")") args
+                                                   )
+                where decodeFunction = case length args of
+                                           0 -> "Json.Decode.succeed"
+                                           1 -> "Json.Decode.map"
+                                           n -> "Json.Decode.tuple" ++ show n
     where
       funcname name = "jsonDec" ++ et_name name
       prependTypes str = map (\tv -> str ++ tv_name tv) . et_args
       decoderType name = funcname name ++ " : " ++ intercalate " -> " (prependTypes "Json.Decode.Decoder " name ++ [decoderTypeEnd name])
       decoderTypeEnd name = unwords ("Json.Decode.Decoder" : "(" : et_name name : map tv_name (et_args name) ++ [")"])
       makeName name = unwords (funcname name : prependTypes "localDecoder_" name)
-      mkDecoder oname (Left args)  =  "Json.Decode.map "
-                                   ++ cap oname
-                                   ++ " ("
-                                   ++ unwords (parseRecords Nothing args)
-                                   ++ ")"
-      mkDecoder oname (Right args) = unwords ( decodeFunction
-                                             : cap oname
-                                             : map (\t' -> "(" ++ jsonParserForType t' ++ ")") args
-                                             )
-          where decodeFunction = case length args of
-                                     0 -> "Json.Decode.succeed"
-                                     1 -> "Json.Decode.map"
-                                     n -> "Json.Decode.tuple" ++ show n
 
 {-| Compile a JSON serializer for an Elm type.
 
