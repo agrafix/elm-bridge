@@ -231,7 +231,7 @@ mkDecodeTest pred prefix num elems = unlines (
     ++ ["  ]"]
     )
   where
-      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqual (Json.Decode.decodeString (jsonDec" ++ pred ++ num ++ " Json.Decode.int) " ++ encoded ++ ") (Ok (" ++ pretty ++ ")))"
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqual (Json.Decode.decodeString (jsonDec" ++ pred ++ num ++ " (Json.Decode.list Json.Decode.int)) " ++ encoded ++ ") (Ok (" ++ pretty ++ ")))"
         where
             pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
             encoded = show (encode e)
@@ -252,7 +252,7 @@ mkEncodeTest pred prefix num elems = unlines (
     ++ ["  ]"]
     )
   where
-      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqualHack (Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ " Json.Encode.int (" ++ pretty ++ "))) " ++ encoded ++ ")"
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqualHack (Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ "(Json.Encode.list << List.map Json.Encode.int) (" ++ pretty ++ "))) " ++ encoded ++ ")"
         where
             pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
             encoded = show (encode e)
@@ -278,28 +278,28 @@ mkSimpleEncodeTest = mkEncodeTest "Simple" "_s"
 
 main :: IO ()
 main = do
-    ss01 <- sample' arbitrary :: IO [Sum01 Int]
-    ss02 <- sample' arbitrary :: IO [Sum02 Int]
-    ss03 <- sample' arbitrary :: IO [Sum03 Int]
-    ss04 <- sample' arbitrary :: IO [Sum04 Int]
-    ss05 <- sample' arbitrary :: IO [Sum05 Int]
-    ss06 <- sample' arbitrary :: IO [Sum06 Int]
-    ss07 <- sample' arbitrary :: IO [Sum07 Int]
-    ss08 <- sample' arbitrary :: IO [Sum08 Int]
-    ss09 <- sample' arbitrary :: IO [Sum09 Int]
-    ss10 <- sample' arbitrary :: IO [Sum10 Int]
-    ss11 <- sample' arbitrary :: IO [Sum11 Int]
-    ss12 <- sample' arbitrary :: IO [Sum12 Int]
-    re01 <- sample' arbitrary :: IO [Record1 Int]
-    re02 <- sample' arbitrary :: IO [Record2 Int]
-    sp01 <- sample' arbitrary :: IO [Simple01 Int]
-    sp02 <- sample' arbitrary :: IO [Simple02 Int]
-    sp03 <- sample' arbitrary :: IO [Simple03 Int]
-    sp04 <- sample' arbitrary :: IO [Simple04 Int]
-    sr01 <- sample' arbitrary :: IO [SimpleRecord01 Int]
-    sr02 <- sample' arbitrary :: IO [SimpleRecord02 Int]
-    sr03 <- sample' arbitrary :: IO [SimpleRecord03 Int]
-    sr04 <- sample' arbitrary :: IO [SimpleRecord04 Int]
+    ss01 <- sample' arbitrary :: IO [Sum01 [Int]]
+    ss02 <- sample' arbitrary :: IO [Sum02 [Int]]
+    ss03 <- sample' arbitrary :: IO [Sum03 [Int]]
+    ss04 <- sample' arbitrary :: IO [Sum04 [Int]]
+    ss05 <- sample' arbitrary :: IO [Sum05 [Int]]
+    ss06 <- sample' arbitrary :: IO [Sum06 [Int]]
+    ss07 <- sample' arbitrary :: IO [Sum07 [Int]]
+    ss08 <- sample' arbitrary :: IO [Sum08 [Int]]
+    ss09 <- sample' arbitrary :: IO [Sum09 [Int]]
+    ss10 <- sample' arbitrary :: IO [Sum10 [Int]]
+    ss11 <- sample' arbitrary :: IO [Sum11 [Int]]
+    ss12 <- sample' arbitrary :: IO [Sum12 [Int]]
+    re01 <- sample' arbitrary :: IO [Record1 [Int]]
+    re02 <- sample' arbitrary :: IO [Record2 [Int]]
+    sp01 <- sample' arbitrary :: IO [Simple01 [Int]]
+    sp02 <- sample' arbitrary :: IO [Simple02 [Int]]
+    sp03 <- sample' arbitrary :: IO [Simple03 [Int]]
+    sp04 <- sample' arbitrary :: IO [Simple04 [Int]]
+    sr01 <- sample' arbitrary :: IO [SimpleRecord01 [Int]]
+    sr02 <- sample' arbitrary :: IO [SimpleRecord02 [Int]]
+    sr03 <- sample' arbitrary :: IO [SimpleRecord03 [Int]]
+    sr04 <- sample' arbitrary :: IO [SimpleRecord04 [Int]]
     args <- getArgs
     case args of
         [] -> return ()
