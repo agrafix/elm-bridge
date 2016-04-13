@@ -30,6 +30,15 @@ data Sum10 a = Sum10A a | Sum10B (Maybe a) | Sum10C a a | Sum10D { _s10foo :: a 
 data Sum11 a = Sum11A a | Sum11B (Maybe a) | Sum11C a a | Sum11D { _s11foo :: a } | Sum11E { _s11bar :: Int, _s11baz :: Int } deriving Show
 data Sum12 a = Sum12A a | Sum12B (Maybe a) | Sum12C a a | Sum12D { _s12foo :: a } | Sum12E { _s12bar :: Int, _s12baz :: Int } deriving Show
 
+data Simple01 a = Simple01 a deriving Show
+data Simple02 a = Simple02 a deriving Show
+data Simple03 a = Simple03 a deriving Show
+data Simple04 a = Simple04 a deriving Show
+data SimpleRecord01 a = SimpleRecord01 { _s01qux :: a } deriving Show
+data SimpleRecord02 a = SimpleRecord02 { _s02qux :: a } deriving Show
+data SimpleRecord03 a = SimpleRecord03 { _s03qux :: a } deriving Show
+data SimpleRecord04 a = SimpleRecord04 { _s04qux :: a } deriving Show
+
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = False } ''Record1)
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = True  } ''Record2)
 
@@ -47,6 +56,16 @@ $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = Fa
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = True , allNullaryToStringTag = False, sumEncoding = TwoElemArray } ''Sum10)
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = False, allNullaryToStringTag = True , sumEncoding = TwoElemArray } ''Sum11)
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = True , allNullaryToStringTag = True , sumEncoding = TwoElemArray } ''Sum12)
+
+$(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords = False } ''Simple01)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords = True } ''Simple02)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = True, unwrapUnaryRecords = False } ''Simple03)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = True, unwrapUnaryRecords = True } ''Simple04)
+
+$(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords = False, fieldLabelModifier = drop 4 } ''SimpleRecord01)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords = True , fieldLabelModifier = drop 4 } ''SimpleRecord02)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = True , unwrapUnaryRecords = False, fieldLabelModifier = drop 4 } ''SimpleRecord03)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = True , unwrapUnaryRecords = True , fieldLabelModifier = drop 4 } ''SimpleRecord04)
 
 instance Arbitrary a => Arbitrary (Record1 a) where
     arbitrary = Record1 <$> arbitrary <*> fmap Just arbitrary <*> arbitrary <*> fmap Just arbitrary
@@ -75,6 +94,15 @@ instance Arbitrary a => Arbitrary (Sum10 a) where arbitrary = arb Sum10A Sum10B 
 instance Arbitrary a => Arbitrary (Sum11 a) where arbitrary = arb Sum11A Sum11B Sum11C Sum11D Sum11E
 instance Arbitrary a => Arbitrary (Sum12 a) where arbitrary = arb Sum12A Sum12B Sum12C Sum12D Sum12E
 
+instance Arbitrary a => Arbitrary (Simple01 a) where arbitrary = Simple01 <$> arbitrary
+instance Arbitrary a => Arbitrary (Simple02 a) where arbitrary = Simple02 <$> arbitrary
+instance Arbitrary a => Arbitrary (Simple03 a) where arbitrary = Simple03 <$> arbitrary
+instance Arbitrary a => Arbitrary (Simple04 a) where arbitrary = Simple04 <$> arbitrary
+instance Arbitrary a => Arbitrary (SimpleRecord01 a) where arbitrary = SimpleRecord01 <$> arbitrary
+instance Arbitrary a => Arbitrary (SimpleRecord02 a) where arbitrary = SimpleRecord02 <$> arbitrary
+instance Arbitrary a => Arbitrary (SimpleRecord03 a) where arbitrary = SimpleRecord03 <$> arbitrary
+instance Arbitrary a => Arbitrary (SimpleRecord04 a) where arbitrary = SimpleRecord04 <$> arbitrary
+
 elmModuleContent :: String
 elmModuleContent = unlines
     [ "-- This module requires the following packages:"
@@ -92,7 +120,7 @@ elmModuleContent = unlines
     , "import String"
     , ""
     , "main : Element"
-    , "main = elementRunner <| suite \"Testing\" [ sumEncode, sumDecode, recordDecode, recordEncode ]"
+    , "main = elementRunner <| suite \"Testing\" [ sumEncode, sumDecode, recordDecode, recordEncode, simpleEncode, simpleDecode ]"
     , ""
     , "recordDecode : Test"
     , "recordDecode = suite \"Record decoding checks\""
@@ -138,13 +166,37 @@ elmModuleContent = unlines
     , "              , sumEncode12"
     , "              ]"
     , ""
+    , "simpleDecode : Test"
+    , "simpleDecode = suite \"Simple records/types checks\""
+    , "                [ simpleDecode01"
+    , "                , simpleDecode02"
+    , "                , simpleDecode03"
+    , "                , simpleDecode04"
+    , "                , simplerecordDecode01"
+    , "                , simplerecordDecode02"
+    , "                , simplerecordDecode03"
+    , "                , simplerecordDecode04"
+    , "                ]"
+    , ""
+    , "simpleEncode : Test"
+    , "simpleEncode = suite \"Simple records/types checks\""
+    , "                [ simpleEncode01"
+    , "                , simpleEncode02"
+    , "                , simpleEncode03"
+    , "                , simpleEncode04"
+    , "                , simplerecordEncode01"
+    , "                , simplerecordEncode02"
+    , "                , simplerecordEncode03"
+    , "                , simplerecordEncode04"
+    , "                ]"
+    , ""
     , "-- this is done to prevent artificial differences due to object ordering, this won't work with Maybe's though :("
     , "assertEqualHack : String -> String -> Assertion"
     , "assertEqualHack a b ="
     , "    let remix = Json.Decode.decodeString Json.Decode.value"
     , "    in assertEqual (remix a) (remix b)"
     , ""
-    , makeModuleContentWithAlterations (newtypeAliases ["Record1", "Record2"] . defaultAlterations)
+    , makeModuleContentWithAlterations (newtypeAliases ["Record1", "Record2", "SimpleRecord01", "SimpleRecord02", "SimpleRecord03", "SimpleRecord04"] . defaultAlterations)
         [ DefineElm (Proxy :: Proxy (Record1 a))
         , DefineElm (Proxy :: Proxy (Record2 a))
         , DefineElm (Proxy :: Proxy (Sum01 a))
@@ -159,6 +211,14 @@ elmModuleContent = unlines
         , DefineElm (Proxy :: Proxy (Sum10 a))
         , DefineElm (Proxy :: Proxy (Sum11 a))
         , DefineElm (Proxy :: Proxy (Sum12 a))
+        , DefineElm (Proxy :: Proxy (Simple01 a))
+        , DefineElm (Proxy :: Proxy (Simple02 a))
+        , DefineElm (Proxy :: Proxy (Simple03 a))
+        , DefineElm (Proxy :: Proxy (Simple04 a))
+        , DefineElm (Proxy :: Proxy (SimpleRecord01 a))
+        , DefineElm (Proxy :: Proxy (SimpleRecord02 a))
+        , DefineElm (Proxy :: Proxy (SimpleRecord03 a))
+        , DefineElm (Proxy :: Proxy (SimpleRecord04 a))
         ]
     ]
 
@@ -203,21 +263,19 @@ mkSumEncodeTest = mkEncodeTest "Sum" "_s"
 
 mkRecordEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
 mkRecordEncodeTest = mkEncodeTest "Record" "_r"
-{-
-mkSumEncodeTest num elems = unlines (
-    [ "sumEncode" ++ num ++ " : Test"
-    , "sumEncode" ++ num ++ " = suite \"sum encode " ++ num ++ "\""
-    ]
-    ++ map mktest (zip ([1..] :: [Int]) elems)
-    ++ ["  ]"]
-    )
-  where
-      mktest (n,e) = prefix ++ "test \"" ++ show n ++ "\" (assertEqualHack (Json.Encode.encode 0 (jsonEncSum" ++ num ++ " Json.Encode.int (" ++ pretty ++ "))) " ++ encoded ++ ")"
-        where
-            pretty = T.unpack $ T.replace (T.pack ("_s" ++ num)) T.empty $ T.pack $ show e
-            encoded = show (encode e)
-            prefix = if n == 1 then "  [ " else "  , "
--}
+
+mkSimpleRecordDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSimpleRecordDecodeTest = mkDecodeTest "SimpleRecord" "_s"
+
+mkSimpleRecordEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSimpleRecordEncodeTest = mkEncodeTest "SimpleRecord" "_s"
+
+mkSimpleDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSimpleDecodeTest = mkDecodeTest "Simple" "_s"
+
+mkSimpleEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSimpleEncodeTest = mkEncodeTest "Simple" "_s"
+
 main :: IO ()
 main = do
     ss01 <- sample' arbitrary :: IO [Sum01 Int]
@@ -234,6 +292,14 @@ main = do
     ss12 <- sample' arbitrary :: IO [Sum12 Int]
     re01 <- sample' arbitrary :: IO [Record1 Int]
     re02 <- sample' arbitrary :: IO [Record2 Int]
+    sp01 <- sample' arbitrary :: IO [Simple01 Int]
+    sp02 <- sample' arbitrary :: IO [Simple02 Int]
+    sp03 <- sample' arbitrary :: IO [Simple03 Int]
+    sp04 <- sample' arbitrary :: IO [Simple04 Int]
+    sr01 <- sample' arbitrary :: IO [SimpleRecord01 Int]
+    sr02 <- sample' arbitrary :: IO [SimpleRecord02 Int]
+    sr03 <- sample' arbitrary :: IO [SimpleRecord03 Int]
+    sr04 <- sample' arbitrary :: IO [SimpleRecord04 Int]
     args <- getArgs
     case args of
         [] -> return ()
@@ -267,5 +333,21 @@ main = do
                        , mkRecordDecodeTest "2" re02
                        , mkRecordEncodeTest "1" re01
                        , mkRecordEncodeTest "2" re02
+                       , mkSimpleEncodeTest "01" sp01
+                       , mkSimpleEncodeTest "02" sp02
+                       , mkSimpleEncodeTest "03" sp03
+                       , mkSimpleEncodeTest "04" sp04
+                       , mkSimpleDecodeTest "01" sp01
+                       , mkSimpleDecodeTest "02" sp02
+                       , mkSimpleDecodeTest "03" sp03
+                       , mkSimpleDecodeTest "04" sp04
+                       , mkSimpleRecordEncodeTest "01" sr01
+                       , mkSimpleRecordEncodeTest "02" sr02
+                       , mkSimpleRecordEncodeTest "03" sr03
+                       , mkSimpleRecordEncodeTest "04" sr04
+                       , mkSimpleRecordDecodeTest "01" sr01
+                       , mkSimpleRecordDecodeTest "02" sr02
+                       , mkSimpleRecordDecodeTest "03" sr03
+                       , mkSimpleRecordDecodeTest "04" sr04
                        ]
 
