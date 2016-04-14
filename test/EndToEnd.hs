@@ -231,7 +231,7 @@ mkDecodeTest pred prefix num elems = unlines (
     ++ ["  ]"]
     )
   where
-      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqual (Json.Decode.decodeString (jsonDec" ++ pred ++ num ++ " (Json.Decode.list Json.Decode.int)) " ++ encoded ++ ") (Ok (" ++ pretty ++ ")))"
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqual (Ok (" ++ pretty ++ ")) (Json.Decode.decodeString (jsonDec" ++ pred ++ num ++ " (Json.Decode.list Json.Decode.int)) " ++ encoded ++ "))"
         where
             pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
             encoded = show (encode e)
@@ -252,7 +252,7 @@ mkEncodeTest pred prefix num elems = unlines (
     ++ ["  ]"]
     )
   where
-      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqualHack (Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ "(Json.Encode.list << List.map Json.Encode.int) (" ++ pretty ++ "))) " ++ encoded ++ ")"
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqualHack " ++ encoded ++ "(Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ "(Json.Encode.list << List.map Json.Encode.int) (" ++ pretty ++ "))))"
         where
             pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
             encoded = show (encode e)
