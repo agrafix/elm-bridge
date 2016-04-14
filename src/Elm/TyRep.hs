@@ -67,6 +67,7 @@ data EAlias
    , ea_fields :: [(String, EType)]
    , ea_omit_null :: Bool
    , ea_newtype   :: Bool
+   , ea_unwrap_unary :: Bool
    } deriving (Show, Eq, Ord)
 
 data ESum

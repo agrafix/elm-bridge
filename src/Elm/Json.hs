@@ -61,17 +61,18 @@ jsonParserForType' mh ty =
                 in "Json.Decode.tuple" ++ show tupleLen ++ " (" ++ commas ++ ") "
                     ++ unwords (map (\t' -> "(" ++ jsonParserForType t' ++ ")") xs)
 
-parseRecords :: Maybe ETypeName -> [(String, EType)] -> [String]
-parseRecords newtyped fields = map mkField fields ++ ["   Json.Decode.succeed " ++ mkNewtype ("{" ++ intercalate ", " (map (\(fldName, _) -> fixReserved fldName ++ " = p" ++ fldName) fields) ++ "}")]
+parseRecords :: Maybe ETypeName -> Bool -> [(String, EType)] -> [String]
+parseRecords newtyped unwrap fields = map (mkField doUnwrap) fields ++ ["   Json.Decode.succeed " ++ mkNewtype ("{" ++ intercalate ", " (map (\(fldName, _) -> fixReserved fldName ++ " = p" ++ fldName) fields) ++ "}")]
     where
+        doUnwrap = length fields == 1 && unwrap
         mkNewtype x = case newtyped of
                           Nothing -> x
                           Just nm -> "(" ++ et_name nm ++ " " ++ x ++ ")"
-        mkField (fldName, fldType) =
+        mkField u (fldName, fldType) =
            let (fldStart, fldEnd, mh) = if isOption fldType
                                             then ("(Json.Decode.maybe ", ")", Root)
                                             else ("", "", Leaf)
-           in   "   " ++ fldStart ++ "(\"" ++ fldName ++ "\" := "
+           in   "   " ++ fldStart ++ "(" ++ (if u then "" else "\"" ++ fldName ++ "\" := ")
                       ++ jsonParserForType' mh fldType
                       ++ fldEnd
                       ++ ") `Json.Decode.andThen` \\p" ++ fldName ++ " ->"
@@ -93,10 +94,10 @@ jsonParserForDef etd =
           , makeName name ++  " ="
           , jsonParserForType ty
           ]
-      ETypeAlias (EAlias name fields _ newtyping) -> unlines
+      ETypeAlias (EAlias name fields _ newtyping unwrap) -> unlines
           ( decoderType name
           : (makeName name ++ " =")
-          : parseRecords (if newtyping then Just name else Nothing) fields
+          : parseRecords (if newtyping then Just name else Nothing) unwrap fields
           )
       ETypeSum (ESum name opts (SumEncoding' encodingType) _ unarystring) ->
             decoderType name ++ "\n" ++
@@ -127,7 +128,7 @@ jsonParserForDef etd =
             mkDecoder oname (Left args)  =  "Json.Decode.map "
                                          ++ cap oname
                                          ++ " ("
-                                         ++ unwords (parseRecords Nothing args)
+                                         ++ unwords (parseRecords Nothing False args)
                                          ++ ")"
             mkDecoder oname (Right args) = unwords ( decodeFunction
                                                    : cap oname
@@ -190,7 +191,9 @@ jsonSerForDef etd =
     case etd of
       ETypePrimAlias (EPrimAlias name ty) ->
           makeName name False ++  " = " ++ jsonSerForType ty ++ " val\n"
-      ETypeAlias (EAlias name fields _ newtyping) ->
+      ETypeAlias (EAlias name [(fldName, fldType)] _ newtyping True) ->
+          makeName name newtyping ++ " =\n   " ++ jsonSerForType fldType ++ " val." ++ fixReserved fldName
+      ETypeAlias (EAlias name fields _ newtyping _) ->
           makeName name newtyping ++ " =\n   Json.Encode.object\n   ["
           ++ intercalate "\n   ," (map (\(fldName, fldType) -> " (\"" ++ fldName ++ "\", " ++ jsonSerForType fldType ++ " val." ++ fixReserved fldName ++ ")") fields)
           ++ "\n   ]\n"

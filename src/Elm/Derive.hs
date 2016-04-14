@@ -50,6 +50,14 @@ defaultOptions = A.Options { A.sumEncoding             = A.ObjectWithSingleField
 #endif
                            }
 
+unwrapUnaryRecords :: A.Options -> Bool
+#if MIN_VERSION_aeson(0,10,0)
+unwrapUnaryRecords opts = A.unwrapUnaryRecords opts
+#else
+unwrapUnaryRecords _    = False
+#endif
+
+
 {-| This generates a default set of options. The parameter represents the
 number of characters that must be dropped from the Haskell field names.
 The first letter of the field is then converted to lowercase, ie:
@@ -124,8 +132,9 @@ runDerive name vars mkBody =
 deriveAlias :: A.Options -> Name -> [TyVarBndr] -> [VarStrictType] -> Q [Dec]
 deriveAlias opts name vars conFields =
         runDerive name vars $ \typeName ->
-                [|ETypeAlias (EAlias $typeName $fields omitNothing False)|] -- default to no newtype
+                [|ETypeAlias (EAlias $typeName $fields omitNothing False unwrapUnary)|] -- default to no newtype
     where
+      unwrapUnary = unwrapUnaryRecords opts
       fields = listE $ map mkField conFields
       omitNothing = A.omitNothingFields opts
       mkField :: VarStrictType -> Q Exp
