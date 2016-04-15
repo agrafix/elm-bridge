@@ -31,6 +31,8 @@ makeElmModule moduleName defs = unlines (
     , "import Json.Encode exposing (Value)"
     , "-- The following module comes from bartavelle/json-helpers"
     , "import Json.Helpers exposing (..)"
+    , "import Dict"
+    , "import Set"
     , ""
     , ""
     ]) ++ makeModuleContent defs
