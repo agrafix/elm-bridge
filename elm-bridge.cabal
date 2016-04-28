@@ -1,14 +1,14 @@
 name:                elm-bridge
-version:             0.2.1.2
+version:             0.2.2
 synopsis:            Derive Elm types from Haskell types
 description:         Building the bridge from Haskell to Elm and back. Define types once,
                      use on both sides and enjoy easy (de)serialisation. Cheers!
-homepage:            http://github.com/agrafix/elm-bridge
+homepage:            https://github.com/agrafix/elm-bridge
 license:             BSD3
 license-file:        LICENSE
 author:              Alexander Thiemann <mail@athiemann.net>, Simon Marechal <bartavelle@gmail.com>
 maintainer:          Alexander Thiemann <mail@athiemann.net>
-copyright:           (c) 2015 Alexander Thiemann
+copyright:           (c) 2015 - 2016 Alexander Thiemann and contributors
 category:            Web, Compiler, Language
 build-type:          Simple
 cabal-version:       >=1.10
