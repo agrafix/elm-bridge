@@ -5,6 +5,7 @@ import Elm.Derive
 import Elm.Module
 
 
+import Data.Map (Map)
 import Data.Proxy
 import Test.Hspec
 
@@ -14,6 +15,7 @@ data Bar a
    , b_blablub :: Int
    , b_tuple :: (Int, String)
    , b_list :: [Bool]
+   , b_list_map :: [Map String Bool]
    } deriving (Show, Eq)
 
 data Qux a = Qux1 Int String
@@ -41,6 +43,7 @@ moduleCode = unlines
     , "   , blablub: Int"
     , "   , tuple: (Int, String)"
     , "   , list: (List Bool)"
+    , "   , list_map: (List (Dict String Bool))"
     , "   }"
     , ""
     , "jsonDecBar : Json.Decode.Decoder a -> Json.Decode.Decoder ( Bar a )"
@@ -49,7 +52,8 @@ moduleCode = unlines
     , "   (\"blablub\" := Json.Decode.int) `Json.Decode.andThen` \\pblablub ->"
     , "   (\"tuple\" := Json.Decode.tuple2 (,) (Json.Decode.int) (Json.Decode.string)) `Json.Decode.andThen` \\ptuple ->"
     , "   (\"list\" := Json.Decode.list (Json.Decode.bool)) `Json.Decode.andThen` \\plist ->"
-    , "   Json.Decode.succeed {name = pname, blablub = pblablub, tuple = ptuple, list = plist}"
+    , "   (\"list_map\" := Json.Decode.list (Json.Decode.dict (Json.Decode.bool))) `Json.Decode.andThen` \\plist_map ->"
+    , "   Json.Decode.succeed {name = pname, blablub = pblablub, tuple = ptuple, list = plist, list_map = plist_map}"
     , ""
     , "jsonEncBar : (a -> Value) -> Bar a -> Value"
     , "jsonEncBar localEncoder_a val ="
@@ -58,6 +62,7 @@ moduleCode = unlines
     , "   , (\"blablub\", Json.Encode.int val.blablub)"
     , "   , (\"tuple\", (\\(v1,v2) -> Json.Encode.list [(Json.Encode.int) v1,(Json.Encode.string) v2]) val.tuple)"
     , "   , (\"list\", (Json.Encode.list << List.map Json.Encode.bool) val.list)"
+    , "   , (\"list_map\", (Json.Encode.list << List.map (encodeMap (Json.Encode.string) (Json.Encode.bool))) val.list_map)"
     , "   ]"
     , ""
     ]
