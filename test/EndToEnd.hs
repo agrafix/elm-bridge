@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE CPP #-}
 module Main where
 
 import Elm.Derive
@@ -57,6 +58,7 @@ $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = Tr
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = False, allNullaryToStringTag = True , sumEncoding = TwoElemArray } ''Sum11)
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = True , allNullaryToStringTag = True , sumEncoding = TwoElemArray } ''Sum12)
 
+#if MIN_VERSION_aeson(0,10,0)
 $(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords = False } ''Simple01)
 $(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords = True } ''Simple02)
 $(deriveBoth defaultOptions{ allNullaryToStringTag = True, unwrapUnaryRecords = False } ''Simple03)
@@ -66,6 +68,17 @@ $(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords =
 $(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords = True , fieldLabelModifier = drop 4 } ''SimpleRecord02)
 $(deriveBoth defaultOptions{ allNullaryToStringTag = True , unwrapUnaryRecords = False, fieldLabelModifier = drop 4 } ''SimpleRecord03)
 $(deriveBoth defaultOptions{ allNullaryToStringTag = True , unwrapUnaryRecords = True , fieldLabelModifier = drop 4 } ''SimpleRecord04)
+#else
+$(deriveBoth defaultOptions{ allNullaryToStringTag = False } ''Simple01)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = False } ''Simple02)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = True } ''Simple03)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = True } ''Simple04)
+
+$(deriveBoth defaultOptions{ allNullaryToStringTag = False, fieldLabelModifier = drop 4 } ''SimpleRecord01)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = False, fieldLabelModifier = drop 4 } ''SimpleRecord02)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = True , fieldLabelModifier = drop 4 } ''SimpleRecord03)
+$(deriveBoth defaultOptions{ allNullaryToStringTag = True , fieldLabelModifier = drop 4 } ''SimpleRecord04)
+#endif
 
 instance Arbitrary a => Arbitrary (Record1 a) where
     arbitrary = Record1 <$> arbitrary <*> fmap Just arbitrary <*> arbitrary <*> fmap Just arbitrary
