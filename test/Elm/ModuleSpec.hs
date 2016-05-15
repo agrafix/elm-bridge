@@ -27,7 +27,7 @@ $(deriveElmDef (defaultOptionsDropLower 5) ''Qux)
 
 moduleCode :: String
 moduleCode = unlines
-    [ "module Foo where"
+    [ "module Foo exposing(..)"
     , ""
     , "import Json.Decode"
     , "import Json.Decode exposing ((:=))"
@@ -69,7 +69,7 @@ moduleCode = unlines
 
 moduleCode' :: String
 moduleCode' = unlines
-    [ "module Qux where"
+    [ "module Qux exposing(..)"
     , ""
     , "import Json.Decode"
     , "import Json.Decode exposing ((:=))"

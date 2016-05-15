@@ -121,7 +121,7 @@ elmModuleContent = unlines
     [ "-- This module requires the following packages:"
     , "-- * deadfoxygrandpa/elm-test"
     , "-- * bartavelle/json-helpers"
-    , "module MyTests where"
+    , "module MyTests exposing(..)"
     , ""
     , "import Dict exposing (Dict)"
     , "import Set exposing (Set)"

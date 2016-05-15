@@ -24,7 +24,7 @@ makeElmModule :: String -- ^ Module name
               -> [DefineElm] -- ^ List of definitions to be included in the module
               -> String
 makeElmModule moduleName defs = unlines (
-    [ "module " ++ moduleName ++ " where"
+    [ "module " ++ moduleName ++ " exposing(..)"
     , ""
     , "import Json.Decode"
     , "import Json.Decode exposing ((:=))"
