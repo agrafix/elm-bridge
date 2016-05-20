@@ -3,6 +3,7 @@ module Elm.ModuleSpec (spec) where
 
 import Elm.Derive
 import Elm.Module
+import Elm.Versions
 
 
 import Data.Map (Map)
@@ -25,9 +26,13 @@ data Qux a = Qux1 Int String
 $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef (defaultOptionsDropLower 5) ''Qux)
 
-moduleCode :: String
-moduleCode = unlines
-    [ "module Foo where"
+moduleHeader' :: ElmVersion -> String -> String
+moduleHeader' Elm0p16 name = "module " ++ name ++ " where"
+moduleHeader' Elm0p17 name = "module " ++ name ++ " exposing(..)"
+
+moduleCode :: ElmVersion -> String
+moduleCode elmVersion = unlines
+    [ moduleHeader' elmVersion "Foo"
     , ""
     , "import Json.Decode"
     , "import Json.Decode exposing ((:=))"
@@ -67,9 +72,9 @@ moduleCode = unlines
     , ""
     ]
 
-moduleCode' :: String
-moduleCode' = unlines
-    [ "module Qux where"
+moduleCode' :: ElmVersion -> String
+moduleCode' elmVersion = unlines
+    [ moduleHeader' elmVersion "Qux"
     , ""
     , "import Json.Decode"
     , "import Json.Decode exposing ((:=))"
@@ -102,10 +107,34 @@ moduleCode' = unlines
     ]
 
 spec :: Spec
-spec =
+spec = do
+  makeElmModuleSpec
+  version0p16Spec
+  version0p17Spec
+
+makeElmModuleSpec :: Spec
+makeElmModuleSpec =
     describe "makeElmModule" $
     it "should produce the correct code" $
        do let modu = makeElmModule "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
           let modu' = makeElmModule "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
-          modu `shouldBe` moduleCode
-          modu' `shouldBe` moduleCode'
+          modu `shouldBe` (moduleCode Elm0p16)
+          modu' `shouldBe` (moduleCode' Elm0p16)
+
+version0p16Spec :: Spec
+version0p16Spec =
+  describe "makeElmModuleWithVersion Elm0p16" $
+    it "should produce the correct code" $
+       do let modu = makeElmModuleWithVersion Elm0p16 "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
+          let modu' = makeElmModuleWithVersion Elm0p16 "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
+          modu `shouldBe` (moduleCode Elm0p16)
+          modu' `shouldBe` (moduleCode' Elm0p16)
+
+version0p17Spec :: Spec
+version0p17Spec =
+  describe "makeElmModuleWithVersion Elm0p17" $
+    it "should produce the correct code" $
+       do let modu = makeElmModuleWithVersion Elm0p17 "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
+          let modu' = makeElmModuleWithVersion Elm0p17 "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
+          modu `shouldBe` (moduleCode Elm0p17)
+          modu' `shouldBe` (moduleCode' Elm0p17)

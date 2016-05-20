@@ -28,6 +28,7 @@ library
                        Elm.Module
                        Elm.TyRender
                        Elm.TyRep
+                       Elm.Versions
   other-modules:       Elm.Utils
   build-depends:       base >= 4.7 && < 5,
                        template-haskell,
