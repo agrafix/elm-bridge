@@ -1,3 +1,7 @@
+# v0.3.0
+## New features
+ * Support for Elm 0.17
+
 # v0.2.2
 
 ## New features
