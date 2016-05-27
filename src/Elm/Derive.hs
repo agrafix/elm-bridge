@@ -57,7 +57,6 @@ unwrapUnaryRecords opts = A.unwrapUnaryRecords opts
 unwrapUnaryRecords _    = False
 #endif
 
-
 {-| This generates a default set of options. The parameter represents the
 number of characters that must be dropped from the Haskell field names.
 The first letter of the field is then converted to lowercase, ie:
@@ -188,12 +187,21 @@ deriveElmDef :: A.Options -> Name -> Q [Dec]
 deriveElmDef opts name =
     do TyConI tyCon <- reify name
        case tyCon of
+#if __GLASGOW_HASKELL__ >= 800
+         DataD _ _ tyVars _ constrs _ ->
+#else
          DataD _ _ tyVars constrs _ ->
+#endif
+
              case constrs of
                [] -> fail "Can not derive empty data decls"
                [RecC _ conFields] -> deriveAlias opts name tyVars conFields
                _ -> deriveSum opts name tyVars constrs
+#if __GLASGOW_HASKELL__ >= 800
+         NewtypeD _ _ tyVars _ (RecC _ conFields) _ ->
+#else
          NewtypeD _ _ tyVars (RecC _ conFields) _ ->
+#endif
              deriveAlias opts name tyVars conFields
          TySynD _ vars otherTy ->
              deriveSynonym opts name vars otherTy
