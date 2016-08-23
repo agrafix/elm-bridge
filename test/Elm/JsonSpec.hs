@@ -163,8 +163,9 @@ unaryAParse = unlines
 unaryBParse :: String
 unaryBParse = unlines
     [ "jsonDecUnaryB : Json.Decode.Decoder ( UnaryB )"
-    , "jsonDecUnaryB = decodeSumUnaries \"UnaryB\" jsonDecDictUnaryB"
-    , "jsonDecDictUnaryB = Dict.fromList [(\"UnaryB1\", UnaryB1), (\"UnaryB2\", UnaryB2)]"
+    , "jsonDecUnaryB = "
+    , "    let jsonDecDictUnaryB = Dict.fromList [(\"UnaryB1\", UnaryB1), (\"UnaryB2\", UnaryB2)]"
+    , "    in  decodeSumUnaries \"UnaryB\" jsonDecDictUnaryB"
     ]
 
 unaryASer :: String

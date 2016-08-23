@@ -116,8 +116,9 @@ jsonParserForDef etd =
             dictName = "jsonDecDict" ++ typename
             isObjectSetName = "jsonDecObjectSet" ++ typename
             deriveUnaries strs = unlines
-                [ "decodeSumUnaries " ++ show typename ++ " " ++ dictName
-                , dictName ++ " = Dict.fromList [" ++ intercalate ", " (map (\s -> "(" ++ show s ++ ", " ++ cap s ++ ")") strs ) ++ "]"
+                [ ""
+                , "    let " ++ dictName ++ " = Dict.fromList [" ++ intercalate ", " (map (\s -> "(" ++ show s ++ ", " ++ cap s ++ ")") strs ) ++ "]"
+                , "    in  decodeSumUnaries " ++ show typename ++ " " ++ dictName
                 ]
             encodingDictionary [(oname, args)] = "    " ++ mkDecoder oname args
             encodingDictionary os = tab 4 "let " ++ dictName ++ " = Dict.fromList\n" ++ tab 12 "[ " ++ intercalate ("\n" ++ replicate 12 ' ' ++ ", ") (map dictEntry os) ++ "\n" ++ tab 12 "]"
