@@ -1,7 +1,7 @@
 # v0.4.0
 ## New features
  * Support for Elm 0.18
- * Dropped support for Elm 0.17
+ * Dropped support for Elm 0.17 and Elm 0.16
 
 # v0.3.0
 ## New features
