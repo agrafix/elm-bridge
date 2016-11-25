@@ -1,6 +1,6 @@
 name:                elm-bridge
 version:             0.4.0
-synopsis:            Derive Elm types from Haskell types, along with aeson-compatible encoders and decoders.
+synopsis:            Derive Elm types and Json code from Haskell types
 description:         Building the bridge from Haskell to Elm and back. Define types once,
                      use on both sides and enjoy easy (de)serialisation. Cheers!
 
