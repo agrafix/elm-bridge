@@ -27,8 +27,7 @@ $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef (defaultOptionsDropLower 5) ''Qux)
 
 moduleHeader' :: ElmVersion -> String -> String
-moduleHeader' Elm0p16 name = "module " ++ name ++ " where"
-moduleHeader' Elm0p17 name = "module " ++ name ++ " exposing(..)"
+moduleHeader' Elm0p18 name = "module " ++ name ++ " exposing(..)"
 
 moduleCode :: ElmVersion -> String
 moduleCode elmVersion = unlines
@@ -53,11 +52,11 @@ moduleCode elmVersion = unlines
     , ""
     , "jsonDecBar : Json.Decode.Decoder a -> Json.Decode.Decoder ( Bar a )"
     , "jsonDecBar localDecoder_a ="
-    , "   (\"name\" := localDecoder_a) `Json.Decode.andThen` \\pname ->"
-    , "   (\"blablub\" := Json.Decode.int) `Json.Decode.andThen` \\pblablub ->"
-    , "   (\"tuple\" := Json.Decode.tuple2 (,) (Json.Decode.int) (Json.Decode.string)) `Json.Decode.andThen` \\ptuple ->"
-    , "   (\"list\" := Json.Decode.list (Json.Decode.bool)) `Json.Decode.andThen` \\plist ->"
-    , "   (\"list_map\" := Json.Decode.list (Json.Decode.dict (Json.Decode.bool))) `Json.Decode.andThen` \\plist_map ->"
+    , "   (\"name\" := localDecoder_a) >>= \\pname ->"
+    , "   (\"blablub\" := Json.Decode.int) >>= \\pblablub ->"
+    , "   (\"tuple\" := Json.Decode.map2 (,) (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string))) >>= \\ptuple ->"
+    , "   (\"list\" := Json.Decode.list (Json.Decode.bool)) >>= \\plist ->"
+    , "   (\"list_map\" := Json.Decode.list (Json.Decode.dict (Json.Decode.bool))) >>= \\plist_map ->"
     , "   Json.Decode.succeed {name = pname, blablub = pblablub, tuple = ptuple, list = plist, list_map = plist_map}"
     , ""
     , "jsonEncBar : (a -> Value) -> Bar a -> Value"
@@ -92,8 +91,8 @@ moduleCode' elmVersion = unlines
     , "jsonDecQux : Json.Decode.Decoder a -> Json.Decode.Decoder ( Qux a )"
     , "jsonDecQux localDecoder_a ="
     , "    let jsonDecDictQux = Dict.fromList"
-    , "            [ (\"Qux1\", Json.Decode.tuple2 Qux1 (Json.Decode.int) (Json.Decode.string))"
-    , "            , (\"Qux2\", Json.Decode.map Qux2 (   (\"a\" := Json.Decode.int) `Json.Decode.andThen` \\pa ->    (\"test\" := localDecoder_a) `Json.Decode.andThen` \\ptest ->    Json.Decode.succeed {a = pa, test = ptest}))"
+    , "            [ (\"Qux1\", Json.Decode.map2 Qux1 (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string)))"
+    , "            , (\"Qux2\", Json.Decode.map Qux2 (   (\"a\" := Json.Decode.int) >>= \\pa ->    (\"test\" := localDecoder_a) >>= \\ptest ->    Json.Decode.succeed {a = pa, test = ptest}))"
     , "            ]"
     , "    in  decodeSumObjectWithSingleField  \"Qux\" jsonDecDictQux"
     , ""
@@ -109,8 +108,7 @@ moduleCode' elmVersion = unlines
 spec :: Spec
 spec = do
   makeElmModuleSpec
-  version0p16Spec
-  version0p17Spec
+  version0p18Spec
 
 makeElmModuleSpec :: Spec
 makeElmModuleSpec =
@@ -118,23 +116,14 @@ makeElmModuleSpec =
     it "should produce the correct code" $
        do let modu = makeElmModule "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
           let modu' = makeElmModule "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
-          modu `shouldBe` (moduleCode Elm0p16)
-          modu' `shouldBe` (moduleCode' Elm0p16)
+          modu `shouldBe` (moduleCode Elm0p18)
+          modu' `shouldBe` (moduleCode' Elm0p18)
 
-version0p16Spec :: Spec
-version0p16Spec =
-  describe "makeElmModuleWithVersion Elm0p16" $
+version0p18Spec :: Spec
+version0p18Spec =
+  describe "makeElmModuleWithVersion Elm0p18" $
     it "should produce the correct code" $
-       do let modu = makeElmModuleWithVersion Elm0p16 "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
-          let modu' = makeElmModuleWithVersion Elm0p16 "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
-          modu `shouldBe` (moduleCode Elm0p16)
-          modu' `shouldBe` (moduleCode' Elm0p16)
-
-version0p17Spec :: Spec
-version0p17Spec =
-  describe "makeElmModuleWithVersion Elm0p17" $
-    it "should produce the correct code" $
-       do let modu = makeElmModuleWithVersion Elm0p17 "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
-          let modu' = makeElmModuleWithVersion Elm0p17 "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
-          modu `shouldBe` (moduleCode Elm0p17)
-          modu' `shouldBe` (moduleCode' Elm0p17)
+       do let modu = makeElmModuleWithVersion Elm0p18 "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
+          let modu' = makeElmModuleWithVersion Elm0p18 "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
+          modu `shouldBe` (moduleCode Elm0p18)
+          modu' `shouldBe` (moduleCode' Elm0p18)

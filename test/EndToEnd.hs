@@ -119,36 +119,37 @@ instance Arbitrary a => Arbitrary (SimpleRecord04 a) where arbitrary = SimpleRec
 elmModuleContent :: String
 elmModuleContent = unlines
     [ "-- This module requires the following packages:"
-    , "-- * deadfoxygrandpa/elm-test"
+    , "-- * elm-community/elm-test"
     , "-- * bartavelle/json-helpers"
-    , "module MyTests where"
+    , "module MyTests exposing (..)"
     , ""
     , "import Dict exposing (Dict)"
     , "import Set exposing (Set)"
-    , "import Json.Decode exposing ((:=), Value)"
+    , "import Json.Decode exposing (field, Value)"
     , "import Json.Encode"
     , "import Json.Helpers exposing (..)"
-    , "import ElmTest exposing (..)"
-    , "import Graphics.Element exposing (Element)"
+    , "import Test exposing (..)"
+    , "import Expect exposing (..)"
+    , "import Test.Runner.Html"
     , "import String"
     , ""
-    , "main : Element"
-    , "main = elementRunner <| suite \"Testing\" [ sumEncode, sumDecode, recordDecode, recordEncode, simpleEncode, simpleDecode ]"
+    , "main : Test.Runner.Html.TestProgram"
+    , "main = Test.Runner.Html.run <| concat [ sumEncode, sumDecode, recordDecode, recordEncode, simpleEncode, simpleDecode ]"
     , ""
     , "recordDecode : Test"
-    , "recordDecode = suite \"Record decoding checks\""
+    , "recordDecode = describe \"Record decoding checks\""
     , "              [ recordDecode1"
     , "              , recordDecode2"
     , "              ]"
     , ""
     , "recordEncode : Test"
-    , "recordEncode = suite \"Record encoding checks\""
+    , "recordEncode = describe \"Record encoding checks\""
     , "              [ recordEncode1"
     , "              , recordEncode2"
     , "              ]"
     , ""
     , "sumDecode : Test"
-    , "sumDecode = suite \"Sum decoding checks\""
+    , "sumDecode = describe \"Sum decoding checks\""
     , "              [ sumDecode01"
     , "              , sumDecode02"
     , "              , sumDecode03"
@@ -164,7 +165,7 @@ elmModuleContent = unlines
     , "              ]"
     , ""
     , "sumEncode : Test"
-    , "sumEncode = suite \"Sum encoding checks\""
+    , "sumEncode = describe \"Sum encoding checks\""
     , "              [ sumEncode01"
     , "              , sumEncode02"
     , "              , sumEncode03"
@@ -180,7 +181,7 @@ elmModuleContent = unlines
     , "              ]"
     , ""
     , "simpleDecode : Test"
-    , "simpleDecode = suite \"Simple records/types checks\""
+    , "simpleDecode = describe \"Simple records/types checks\""
     , "                [ simpleDecode01"
     , "                , simpleDecode02"
     , "                , simpleDecode03"
@@ -192,7 +193,7 @@ elmModuleContent = unlines
     , "                ]"
     , ""
     , "simpleEncode : Test"
-    , "simpleEncode = suite \"Simple records/types checks\""
+    , "simpleEncode = describe \"Simple records/types checks\""
     , "                [ simpleEncode01"
     , "                , simpleEncode02"
     , "                , simpleEncode03"
@@ -204,10 +205,10 @@ elmModuleContent = unlines
     , "                ]"
     , ""
     , "-- this is done to prevent artificial differences due to object ordering, this won't work with Maybe's though :("
-    , "assertEqualHack : String -> String -> Assertion"
-    , "assertEqualHack a b ="
+    , "equalHack : String -> String -> Expectation"
+    , "equalHack a b ="
     , "    let remix = Json.Decode.decodeString Json.Decode.value"
-    , "    in assertEqual (remix a) (remix b)"
+    , "    in equal (remix a) (remix b)"
     , ""
     , makeModuleContentWithAlterations (newtypeAliases ["Record1", "Record2", "SimpleRecord01", "SimpleRecord02", "SimpleRecord03", "SimpleRecord04"] . defaultAlterations)
         [ DefineElm (Proxy :: Proxy (Record1 a))
@@ -238,13 +239,13 @@ elmModuleContent = unlines
 mkDecodeTest :: (Show a, ToJSON a) => String -> String -> String -> [a] -> String
 mkDecodeTest pred prefix num elems = unlines (
     [ map toLower pred ++ "Decode" ++ num ++ " : Test"
-    , map toLower pred ++ "Decode" ++ num ++ " = suite \"" ++ pred ++ " decode " ++ num ++ "\""
+    , map toLower pred ++ "Decode" ++ num ++ " = describe \"" ++ pred ++ " decode " ++ num ++ "\""
     ]
     ++ map mktest (zip ([1..] :: [Int]) elems)
     ++ ["  ]"]
     )
   where
-      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqual (Ok (" ++ pretty ++ ")) (Json.Decode.decodeString (jsonDec" ++ pred ++ num ++ " (Json.Decode.list Json.Decode.int)) " ++ encoded ++ "))"
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (\\_ -> equal (Ok (" ++ pretty ++ ")) (Json.Decode.decodeString (jsonDec" ++ pred ++ num ++ " (Json.Decode.list Json.Decode.int)) " ++ encoded ++ "))"
         where
             pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
             encoded = show (encode e)
@@ -259,13 +260,13 @@ mkRecordDecodeTest = mkDecodeTest "Record" "_r"
 mkEncodeTest :: (Show a, ToJSON a) => String -> String -> String -> [a] -> String
 mkEncodeTest pred prefix num elems = unlines (
     [ map toLower pred ++ "Encode" ++ num ++ " : Test"
-    , map toLower pred ++ "Encode" ++ num ++ " = suite \"" ++ pred ++ " encode " ++ num ++ "\""
+    , map toLower pred ++ "Encode" ++ num ++ " = describe \"" ++ pred ++ " encode " ++ num ++ "\""
     ]
     ++ map mktest (zip ([1..] :: [Int]) elems)
     ++ ["  ]"]
     )
   where
-      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (assertEqualHack " ++ encoded ++ "(Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ "(Json.Encode.list << List.map Json.Encode.int) (" ++ pretty ++ "))))"
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (\\_ -> equalHack " ++ encoded ++ "(Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ "(Json.Encode.list << List.map Json.Encode.int) (" ++ pretty ++ "))))"
         where
             pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
             encoded = show (encode e)

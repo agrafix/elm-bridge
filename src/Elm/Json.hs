@@ -58,8 +58,8 @@ jsonParserForType' mh ty =
             xs ->
                 let tupleLen = length xs
                     commas = replicate (tupleLen - 1) ','
-                in "Json.Decode.tuple" ++ show tupleLen ++ " (" ++ commas ++ ") "
-                    ++ unwords (map (\t' -> "(" ++ jsonParserForType t' ++ ")") xs)
+                in "Json.Decode.map" ++ show tupleLen ++ " (" ++ commas ++ ") "
+                    ++ unwords (zipWith (\i t' -> "(Json.Decode.index " ++ show (i :: Int) ++ " (" ++ jsonParserForType t' ++ "))") [0..] xs)
 
 parseRecords :: Maybe ETypeName -> Bool -> [(String, EType)] -> [String]
 parseRecords newtyped unwrap fields = map (mkField doUnwrap) fields ++ ["   Json.Decode.succeed " ++ mkNewtype ("{" ++ intercalate ", " (map (\(fldName, _) -> fixReserved fldName ++ " = p" ++ fldName) fields) ++ "}")]
@@ -75,7 +75,7 @@ parseRecords newtyped unwrap fields = map (mkField doUnwrap) fields ++ ["   Json
            in   "   " ++ fldStart ++ "(" ++ (if u then "" else "\"" ++ fldName ++ "\" := ")
                       ++ jsonParserForType' mh fldType
                       ++ fldEnd
-                      ++ ") `Json.Decode.andThen` \\p" ++ fldName ++ " ->"
+                      ++ ") >>= \\p" ++ fldName ++ " ->"
 
 -- | Checks that all the arguments to the ESum are unary values
 allUnaries :: Bool -> [(String, Either [(String, EType)] [EType])] -> Maybe [String]
@@ -133,12 +133,15 @@ jsonParserForDef etd =
                                          ++ ")"
             mkDecoder oname (Right args) = unwords ( decodeFunction
                                                    : cap oname
-                                                   : map (\t' -> "(" ++ jsonParserForType t' ++ ")") args
+                                                   : zipWith (\t' i -> "(" ++ jsonParserForIndexedType t' i ++ ")") args [0..]
                                                    )
                 where decodeFunction = case length args of
                                            0 -> "Json.Decode.succeed"
                                            1 -> "Json.Decode.map"
-                                           n -> "Json.Decode.tuple" ++ show n
+                                           n -> "Json.Decode.map" ++ show n
+                      jsonParserForIndexedType :: EType -> Int -> String
+                      jsonParserForIndexedType t' i | length args <= 1 = jsonParserForType t'
+                                                    | otherwise = "Json.Decode.index " ++ show i ++ " (" ++ jsonParserForType t' ++ ")"
     where
       funcname name = "jsonDec" ++ et_name name
       prependTypes str = map (\tv -> str ++ tv_name tv) . et_args

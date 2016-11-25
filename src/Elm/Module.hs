@@ -23,8 +23,7 @@ data DefineElm
 moduleHeader :: ElmVersion
              -> String
              -> String
-moduleHeader Elm0p16 moduleName = "module " ++ moduleName ++ " where"
-moduleHeader Elm0p17 moduleName = "module " ++ moduleName ++ " exposing(..)"
+moduleHeader Elm0p18 moduleName = "module " ++ moduleName ++ " exposing(..)"
 
 -- | Creates an Elm module for the given version. This will use the default
 -- type conversion rules (to -- convert @Vector@ to @List@, @HashMap a b@
@@ -52,7 +51,7 @@ makeElmModuleWithVersion elmVersion moduleName defs = unlines (
 makeElmModule :: String -- ^ Module name
               -> [DefineElm] -- ^ List of definitions to be included in the module
               -> String
-makeElmModule = makeElmModuleWithVersion Elm0p16
+makeElmModule = makeElmModuleWithVersion Elm0p18
 
 -- | Generates the content of a module. You will be responsible for
 -- including the required Elm headers. This uses the default type
