@@ -72,7 +72,7 @@ parseRecords newtyped unwrap fields = map (mkField doUnwrap) fields ++ ["   Json
            let (fldStart, fldEnd, mh) = if isOption fldType
                                             then ("(Json.Decode.maybe ", ")", Root)
                                             else ("", "", Leaf)
-           in   "   " ++ fldStart ++ "(" ++ (if u then "" else "\"" ++ fldName ++ "\" := ")
+           in   "   " ++ fldStart ++ "(" ++ (if u then "" else "Json.Decode.field \"" ++ fldName ++ "\" ")
                       ++ jsonParserForType' mh fldType
                       ++ fldEnd
                       ++ ") >>= \\p" ++ fldName ++ " ->"
