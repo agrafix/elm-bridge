@@ -28,7 +28,7 @@ moduleHeader Elm0p18 moduleName = "module " ++ moduleName ++ " exposing(..)"
 -- | Creates an Elm module for the given version. This will use the default
 -- type conversion rules (to -- convert @Vector@ to @List@, @HashMap a b@
 -- to @List (a,b)@, etc.).
-makeElmModuleWithVersion :: ElmVersion 
+makeElmModuleWithVersion :: ElmVersion
                          -> String  -- ^ Module name
                          -> [DefineElm]  -- ^ List of definitions to be included in the module
                          -> String
@@ -36,7 +36,7 @@ makeElmModuleWithVersion elmVersion moduleName defs = unlines (
     [ moduleHeader elmVersion moduleName
     , ""
     , "import Json.Decode"
-    , "import Json.Decode exposing ((:=))"
+    , "import Json.Decode"
     , "import Json.Encode exposing (Value)"
     , "-- The following module comes from bartavelle/json-helpers"
     , "import Json.Helpers exposing (..)"
