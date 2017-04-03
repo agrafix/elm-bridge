@@ -36,7 +36,6 @@ makeElmModuleWithVersion elmVersion moduleName defs = unlines (
     [ moduleHeader elmVersion moduleName
     , ""
     , "import Json.Decode"
-    , "import Json.Decode"
     , "import Json.Encode exposing (Value)"
     , "-- The following module comes from bartavelle/json-helpers"
     , "import Json.Helpers exposing (..)"
