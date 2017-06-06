@@ -1,3 +1,8 @@
+# v0.4.1
+
+## Bugfixes
+ * Fixed support for Elm 0.18 (see issue #17)
+
 # v0.4.0
 ## New features
  * Support for Elm 0.18
