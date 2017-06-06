@@ -34,7 +34,7 @@ library
   other-modules:       Elm.Utils
   build-depends:       base >= 4.7 && < 5,
                        template-haskell,
-                       aeson  >= 0.9
+                       aeson  >= 0.9 && < 1.2
   default-language:    Haskell2010
 
 test-suite end-to-end-tests
