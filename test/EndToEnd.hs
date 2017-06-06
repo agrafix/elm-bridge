@@ -40,6 +40,9 @@ data SimpleRecord02 a = SimpleRecord02 { _s02qux :: a } deriving Show
 data SimpleRecord03 a = SimpleRecord03 { _s03qux :: a } deriving Show
 data SimpleRecord04 a = SimpleRecord04 { _s04qux :: a } deriving Show
 
+data SumUntagged a = SMInt Int | SMList a
+              deriving Show
+
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = False } ''Record1)
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = True  } ''Record2)
 
@@ -58,7 +61,6 @@ $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = Tr
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = False, allNullaryToStringTag = True , sumEncoding = TwoElemArray } ''Sum11)
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = True , allNullaryToStringTag = True , sumEncoding = TwoElemArray } ''Sum12)
 
-#if MIN_VERSION_aeson(0,10,0)
 $(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords = False } ''Simple01)
 $(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords = True } ''Simple02)
 $(deriveBoth defaultOptions{ allNullaryToStringTag = True, unwrapUnaryRecords = False } ''Simple03)
@@ -68,17 +70,8 @@ $(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords =
 $(deriveBoth defaultOptions{ allNullaryToStringTag = False, unwrapUnaryRecords = True , fieldLabelModifier = drop 4 } ''SimpleRecord02)
 $(deriveBoth defaultOptions{ allNullaryToStringTag = True , unwrapUnaryRecords = False, fieldLabelModifier = drop 4 } ''SimpleRecord03)
 $(deriveBoth defaultOptions{ allNullaryToStringTag = True , unwrapUnaryRecords = True , fieldLabelModifier = drop 4 } ''SimpleRecord04)
-#else
-$(deriveBoth defaultOptions{ allNullaryToStringTag = False } ''Simple01)
-$(deriveBoth defaultOptions{ allNullaryToStringTag = False } ''Simple02)
-$(deriveBoth defaultOptions{ allNullaryToStringTag = True } ''Simple03)
-$(deriveBoth defaultOptions{ allNullaryToStringTag = True } ''Simple04)
 
-$(deriveBoth defaultOptions{ allNullaryToStringTag = False, fieldLabelModifier = drop 4 } ''SimpleRecord01)
-$(deriveBoth defaultOptions{ allNullaryToStringTag = False, fieldLabelModifier = drop 4 } ''SimpleRecord02)
-$(deriveBoth defaultOptions{ allNullaryToStringTag = True , fieldLabelModifier = drop 4 } ''SimpleRecord03)
-$(deriveBoth defaultOptions{ allNullaryToStringTag = True , fieldLabelModifier = drop 4 } ''SimpleRecord04)
-#endif
+$(deriveBoth defaultOptions{ sumEncoding = UntaggedValue } ''SumUntagged)
 
 instance Arbitrary a => Arbitrary (Record1 a) where
     arbitrary = Record1 <$> arbitrary <*> fmap Just arbitrary <*> arbitrary <*> fmap Just arbitrary
@@ -116,6 +109,8 @@ instance Arbitrary a => Arbitrary (SimpleRecord02 a) where arbitrary = SimpleRec
 instance Arbitrary a => Arbitrary (SimpleRecord03 a) where arbitrary = SimpleRecord03 <$> arbitrary
 instance Arbitrary a => Arbitrary (SimpleRecord04 a) where arbitrary = SimpleRecord04 <$> arbitrary
 
+instance Arbitrary a => Arbitrary (SumUntagged a) where arbitrary = oneof [ SMInt <$> arbitrary, SMList <$> arbitrary ]
+
 elmModuleContent :: String
 elmModuleContent = unlines
     [ "-- This module requires the following packages:"
@@ -130,11 +125,7 @@ elmModuleContent = unlines
     , "import Json.Helpers exposing (..)"
     , "import Test exposing (..)"
     , "import Expect exposing (..)"
-    , "import Test.Runner.Html"
     , "import String"
-    , ""
-    , "main : Test.Runner.Html.TestProgram"
-    , "main = Test.Runner.Html.run <| concat [ sumEncode, sumDecode, recordDecode, recordEncode, simpleEncode, simpleDecode ]"
     , ""
     , "recordDecode : Test"
     , "recordDecode = describe \"Record decoding checks\""
@@ -162,6 +153,7 @@ elmModuleContent = unlines
     , "              , sumDecode10"
     , "              , sumDecode11"
     , "              , sumDecode12"
+    , "              , sumDecodeUntagged"
     , "              ]"
     , ""
     , "sumEncode : Test"
@@ -178,6 +170,7 @@ elmModuleContent = unlines
     , "              , sumEncode10"
     , "              , sumEncode11"
     , "              , sumEncode12"
+    , "              , sumEncodeUntagged"
     , "              ]"
     , ""
     , "simpleDecode : Test"
@@ -233,6 +226,7 @@ elmModuleContent = unlines
         , DefineElm (Proxy :: Proxy (SimpleRecord02 a))
         , DefineElm (Proxy :: Proxy (SimpleRecord03 a))
         , DefineElm (Proxy :: Proxy (SimpleRecord04 a))
+        , DefineElm (Proxy :: Proxy (SumUntagged a))
         ]
     ]
 
@@ -314,6 +308,7 @@ main = do
     sr02 <- sample' arbitrary :: IO [SimpleRecord02 [Int]]
     sr03 <- sample' arbitrary :: IO [SimpleRecord03 [Int]]
     sr04 <- sample' arbitrary :: IO [SimpleRecord04 [Int]]
+    sm   <- sample' arbitrary :: IO [SumUntagged [Int]]
     args <- getArgs
     case args of
         [] -> return ()
@@ -363,5 +358,7 @@ main = do
                        , mkSimpleRecordDecodeTest "02" sr02
                        , mkSimpleRecordDecodeTest "03" sr03
                        , mkSimpleRecordDecodeTest "04" sr04
+                       , mkSumEncodeTest "Untagged" sm
+                       , mkSumDecodeTest "Untagged" sm
                        ]
 

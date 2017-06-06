@@ -113,24 +113,29 @@ instance Show SumEncoding' where
                                  TaggedObject n f -> "TaggedObject " ++ show n ++ " " ++ show f
                                  ObjectWithSingleField -> "ObjectWithSingleField"
                                  TwoElemArray -> "TwoElemArray"
+                                 UntaggedValue -> "UntaggedValue"
 
 instance Eq SumEncoding' where
     SumEncoding' a == SumEncoding' b = case (a,b) of
                                            (TaggedObject a1 b1, TaggedObject a2 b2) -> a1 == a2 && b1 == b2
                                            (ObjectWithSingleField, ObjectWithSingleField) -> True
                                            (TwoElemArray, TwoElemArray) -> True
+                                           (UntaggedValue, UntaggedValue) -> True
                                            _ -> False
 
 instance Ord SumEncoding' where
     compare (SumEncoding' a) (SumEncoding' b) =
        case (a,b) of
           (TaggedObject a1 b1, TaggedObject a2 b2) -> compare a1 a2 <> compare b1 b2
+          (ObjectWithSingleField, ObjectWithSingleField) -> EQ
+          (TwoElemArray, TwoElemArray) -> EQ
+          (UntaggedValue, UntaggedValue) -> EQ
           (TaggedObject _ _, _) -> LT
           (_, TaggedObject _ _) -> GT
-          (ObjectWithSingleField, ObjectWithSingleField) -> EQ
           (ObjectWithSingleField, _) -> LT
           (_, ObjectWithSingleField) -> GT
-          (TwoElemArray, TwoElemArray) -> EQ
+          (UntaggedValue, _) -> LT
+          (_, UntaggedValue) -> GT
 
 defSumEncoding :: SumEncoding'
 defSumEncoding = SumEncoding' ObjectWithSingleField

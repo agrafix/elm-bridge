@@ -40,22 +40,18 @@ import Prelude
 -- | Note that This default set of options is distinct from that in
 -- the @aeson@ package.
 defaultOptions :: A.Options
-defaultOptions = A.Options { A.sumEncoding             = A.ObjectWithSingleField
-                           , A.fieldLabelModifier      = id
-                           , A.constructorTagModifier  = id
-                           , A.allNullaryToStringTag   = True
-                           , A.omitNothingFields       = False
-#if MIN_VERSION_aeson(0,10,0)
-                           , A.unwrapUnaryRecords      = False
-#endif
-                           }
+defaultOptions
+  = A.defaultOptions
+  { A.sumEncoding             = A.ObjectWithSingleField
+  , A.fieldLabelModifier      = id
+  , A.constructorTagModifier  = id
+  , A.allNullaryToStringTag   = True
+  , A.omitNothingFields       = False
+  , A.unwrapUnaryRecords      = False
+  }
 
 unwrapUnaryRecords :: A.Options -> Bool
-#if MIN_VERSION_aeson(0,10,0)
 unwrapUnaryRecords opts = A.unwrapUnaryRecords opts
-#else
-unwrapUnaryRecords _    = False
-#endif
 
 {-| This generates a default set of options. The parameter represents the
 number of characters that must be dropped from the Haskell field names.
@@ -96,6 +92,7 @@ optSumType se =
         TwoElemArray -> [|SumEncoding' TwoElemArray|]
         ObjectWithSingleField -> [|SumEncoding' ObjectWithSingleField|]
         TaggedObject tn cn -> [|SumEncoding' (TaggedObject tn cn)|]
+        UntaggedValue -> [|SumEncoding' UntaggedValue|]
 
 runDerive :: Name -> [TyVarBndr] -> (Q Exp -> Q Exp) -> Q [Dec]
 runDerive name vars mkBody =

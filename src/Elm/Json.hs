@@ -108,11 +108,12 @@ jsonParserForDef etd =
           where
             tab n s = replicate n ' ' ++ s
             typename = et_name name
-            declLine [o] = ""
-            declLine os = "    in  " ++ case encodingType of
+            declLine [_] = ""
+            declLine _   = "    in  " ++ case encodingType of
                            ObjectWithSingleField -> unwords [ "decodeSumObjectWithSingleField ", show typename, dictName]
                            TwoElemArray          -> unwords [ "decodeSumTwoElemArray ", show typename, dictName ]
                            TaggedObject tg el    -> unwords [ "decodeSumTaggedObject", show typename, show tg, show el, dictName, isObjectSetName ]
+                           UntaggedValue         -> "Json.Decode.oneOf (Dict.values " ++ dictName ++ ")"
             dictName = "jsonDecDict" ++ typename
             isObjectSetName = "jsonDecObjectSet" ++ typename
             deriveUnaries strs = unlines
@@ -210,6 +211,7 @@ jsonSerForDef etd =
                                    ObjectWithSingleField -> "encodeSumObjectWithSingleField"
                                    TwoElemArray -> "encodeSumTwoElementArray"
                                    TaggedObject k c -> unwords ["encodeSumTaggedObject", show k, show c]
+                                   UntaggedValue -> "encodeSumUntagged"
               defaultEncoding [(oname, Right args)] = unlines $
                 [ makeType name
                 , fname name ++ " " 

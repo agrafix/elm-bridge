@@ -1,3 +1,8 @@
+# v0.4.2
+
+Drop support for `aeson < 1.`
+Add support for `aeson == 1.2.*`
+
 # v0.4.1
 
 ## Bugfixes

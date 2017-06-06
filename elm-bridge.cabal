@@ -1,5 +1,5 @@
 name:                elm-bridge
-version:             0.4.1
+version:             0.4.2
 synopsis:            Derive Elm types and Json code from Haskell types
 description:         Building the bridge from Haskell to Elm and back. Define types once,
                      use on both sides and enjoy easy (de)serialisation. Cheers!
@@ -34,7 +34,7 @@ library
   other-modules:       Elm.Utils
   build-depends:       base >= 4.7 && < 5,
                        template-haskell,
-                       aeson  >= 0.9 && < 1.2
+                       aeson  >= 1
   default-language:    Haskell2010
 
 test-suite end-to-end-tests
