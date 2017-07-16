@@ -117,11 +117,11 @@ jsonParserForDef etd =
             isObjectSetName = "jsonDecObjectSet" ++ typename
             deriveUnaries strs = unlines
                 [ ""
-                , "    let " ++ dictName ++ " = EveryDict.fromList [" ++ intercalate ", " (map (\s -> "(" ++ show s ++ ", " ++ cap s ++ ")") strs ) ++ "]"
+                , "    let " ++ dictName ++ " = Dict.fromList [" ++ intercalate ", " (map (\s -> "(" ++ show s ++ ", " ++ cap s ++ ")") strs ) ++ "]"
                 , "    in  decodeSumUnaries " ++ show typename ++ " " ++ dictName
                 ]
             encodingDictionary [(oname, args)] = "    " ++ mkDecoder oname args
-            encodingDictionary os = tab 4 "let " ++ dictName ++ " = EveryDict.fromList\n" ++ tab 12 "[ " ++ intercalate ("\n" ++ replicate 12 ' ' ++ ", ") (map dictEntry os) ++ "\n" ++ tab 12 "]"
+            encodingDictionary os = tab 4 "let " ++ dictName ++ " = Dict.fromList\n" ++ tab 12 "[ " ++ intercalate ("\n" ++ replicate 12 ' ' ++ ", ") (map dictEntry os) ++ "\n" ++ tab 12 "]"
             isObjectSet = case encodingType of
                               TaggedObject _ _ -> "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " (map (show . fst) $ filter (isLeft . snd) opts) ++ "]")
                               _ -> ""
