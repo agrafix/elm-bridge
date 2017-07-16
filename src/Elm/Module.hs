@@ -40,6 +40,7 @@ makeElmModuleWithVersion elmVersion moduleName defs = unlines
     , "-- The following module comes from bartavelle/json-helpers"
     , "import Json.Helpers exposing (..)"
     , "import EveryDict exposing (EveryDict)"
+    , "import Dict"
     , "import Set"
     , ""
     , ""
