@@ -1,21 +1,21 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Elm.ModuleSpec (spec) where
 
-import Elm.Derive
-import Elm.Module
-import Elm.Versions
+import           Elm.Derive
+import           Elm.Module
+import           Elm.Versions
 
 
-import Data.Map (Map)
-import Data.Proxy
-import Test.Hspec
+import           Data.Map     (Map)
+import           Data.Proxy
+import           Test.Hspec
 
 data Bar a
    = Bar
-   { b_name :: a
-   , b_blablub :: Int
-   , b_tuple :: (Int, String)
-   , b_list :: [Bool]
+   { b_name     :: a
+   , b_blablub  :: Int
+   , b_tuple    :: (Int, String)
+   , b_list     :: [Bool]
    , b_list_map :: [Map String Bool]
    } deriving (Show, Eq)
 
@@ -37,7 +37,7 @@ moduleCode elmVersion = unlines
     , "import Json.Encode exposing (Value)"
     , "-- The following module comes from bartavelle/json-helpers"
     , "import Json.Helpers exposing (..)"
-    , "import Dict"
+    , "import EveryDict"
     , "import Set"
     , ""
     , ""
@@ -46,7 +46,7 @@ moduleCode elmVersion = unlines
     , "   , blablub: Int"
     , "   , tuple: (Int, String)"
     , "   , list: (List Bool)"
-    , "   , list_map: (List (Dict String Bool))"
+    , "   , list_map: (List (EveryDict String Bool))"
     , "   }"
     , ""
     , "jsonDecBar : Json.Decode.Decoder a -> Json.Decode.Decoder ( Bar a )"
@@ -55,7 +55,7 @@ moduleCode elmVersion = unlines
     , "   (\"blablub\" := Json.Decode.int) >>= \\pblablub ->"
     , "   (\"tuple\" := Json.Decode.map2 (,) (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string))) >>= \\ptuple ->"
     , "   (\"list\" := Json.Decode.list (Json.Decode.bool)) >>= \\plist ->"
-    , "   (\"list_map\" := Json.Decode.list (Json.Decode.dict (Json.Decode.bool))) >>= \\plist_map ->"
+    , "   (\"list_map\" := Json.Decode.list (decodeMap (Json.Decode.string) (Json.Decode.bool))) >>= \\plist_map ->"
     , "   Json.Decode.succeed {name = pname, blablub = pblablub, tuple = ptuple, list = plist, list_map = plist_map}"
     , ""
     , "jsonEncBar : (a -> Value) -> Bar a -> Value"
@@ -78,7 +78,7 @@ moduleCode' elmVersion = unlines
     , "import Json.Encode exposing (Value)"
     , "-- The following module comes from bartavelle/json-helpers"
     , "import Json.Helpers exposing (..)"
-    , "import Dict"
+    , "import EveryDict"
     , "import Set"
     , ""
     , ""
@@ -88,7 +88,7 @@ moduleCode' elmVersion = unlines
     , ""
     , "jsonDecQux : Json.Decode.Decoder a -> Json.Decode.Decoder ( Qux a )"
     , "jsonDecQux localDecoder_a ="
-    , "    let jsonDecDictQux = Dict.fromList"
+    , "    let jsonDecDictQux = EveryDict.fromList"
     , "            [ (\"Qux1\", Json.Decode.map2 Qux1 (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string)))"
     , "            , (\"Qux2\", Json.Decode.map Qux2 (   (\"a\" := Json.Decode.int) >>= \\pa ->    (\"test\" := localDecoder_a) >>= \\ptest ->    Json.Decode.succeed {a = pa, test = ptest}))"
     , "            ]"
@@ -110,18 +110,18 @@ spec = do
 
 makeElmModuleSpec :: Spec
 makeElmModuleSpec =
-    describe "makeElmModule" $
+    describe "makeElmModule" .
     it "should produce the correct code" $
        do let modu = makeElmModule "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
           let modu' = makeElmModule "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
-          modu `shouldBe` (moduleCode Elm0p18)
-          modu' `shouldBe` (moduleCode' Elm0p18)
+          modu `shouldBe` moduleCode Elm0p18
+          modu' `shouldBe` moduleCode' Elm0p18
 
 version0p18Spec :: Spec
 version0p18Spec =
-  describe "makeElmModuleWithVersion Elm0p18" $
+  describe "makeElmModuleWithVersion Elm0p18" .
     it "should produce the correct code" $
        do let modu = makeElmModuleWithVersion Elm0p18 "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
           let modu' = makeElmModuleWithVersion Elm0p18 "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
-          modu `shouldBe` (moduleCode Elm0p18)
-          modu' `shouldBe` (moduleCode' Elm0p18)
+          modu `shouldBe` moduleCode Elm0p18
+          modu' `shouldBe` moduleCode' Elm0p18

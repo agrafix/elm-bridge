@@ -1,19 +1,19 @@
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
 {-|
 Functions in this module are used to generate Elm modules. Note that the generated modules depend on the @bartavelle/json-helpers@ package.
 
 -}
 module Elm.Module where
 
-import Data.Proxy
-import Data.List
-import Control.Arrow (second, (+++))
+import           Control.Arrow (second, (+++))
+import           Data.List
+import           Data.Proxy
 
-import Elm.TyRep
-import Elm.TyRender
-import Elm.Json
-import Elm.Versions
+import           Elm.Json
+import           Elm.TyRender
+import           Elm.TyRep
+import           Elm.Versions
 
 -- | Existential quantification wrapper for lists of type definitions
 data DefineElm
@@ -32,18 +32,18 @@ makeElmModuleWithVersion :: ElmVersion
                          -> String  -- ^ Module name
                          -> [DefineElm]  -- ^ List of definitions to be included in the module
                          -> String
-makeElmModuleWithVersion elmVersion moduleName defs = unlines (
+makeElmModuleWithVersion elmVersion moduleName defs = unlines
     [ moduleHeader elmVersion moduleName
     , ""
     , "import Json.Decode"
     , "import Json.Encode exposing (Value)"
     , "-- The following module comes from bartavelle/json-helpers"
     , "import Json.Helpers exposing (..)"
-    , "import Dict"
+    , "import EveryDict"
     , "import Set"
     , ""
     , ""
-    ]) ++ makeModuleContent defs
+    ] ++ makeModuleContent defs
 
 -- | Creates an Elm module. This will use the default type conversion rules (to
 -- convert @Vector@ to @List@, @HashMap a b@ to @List (a,b)@, etc.).
@@ -82,7 +82,7 @@ recAlterType f td = case td of
                      ETypeSum s -> ETypeSum (s { es_options = map (second (map (second f') +++ map f')) (es_options s) })
     where
         f' (ETyApp a b) = f (ETyApp (f' a) (f' b))
-        f' x = f x
+        f' x            = f x
 
 -- | Given a list of type names, will @newtype@ all the matching type
 -- definitions.
@@ -106,22 +106,17 @@ defaultAlterations :: ETypeDef -> ETypeDef
 defaultAlterations = recAlterType $ \t -> case t of
                                   ETyApp (ETyCon (ETCon "HashSet")) s             -> checkSet s
                                   ETyApp (ETyCon (ETCon "Set")) s                 -> checkSet s
-                                  ETyApp (ETyApp (ETyCon (ETCon "HashMap")) k) v  -> checkMap k v
-                                  ETyApp (ETyApp (ETyCon (ETCon "THashMap")) k) v -> checkMap k v
-                                  ETyApp (ETyApp (ETyCon (ETCon "Map")) k) v      -> checkMap k v
+                                  ETyApp (ETyApp (ETyCon (ETCon "HashMap")) k) v  -> ETyApp (ETyApp (tc "EveryDict") k) v
+                                  ETyApp (ETyApp (ETyCon (ETCon "THashMap")) k) v -> ETyApp (ETyApp (tc "EveryDict") k) v
+                                  ETyApp (ETyApp (ETyCon (ETCon "Map")) k) v      -> ETyApp (ETyApp (tc "EveryDict") k) v
                                   ETyCon (ETCon "Integer")                        -> ETyCon (ETCon "Int")
                                   ETyCon (ETCon "Text")                           -> ETyCon (ETCon "String")
                                   ETyCon (ETCon "Vector")                         -> ETyCon (ETCon "List")
                                   ETyCon (ETCon "Double")                         -> ETyCon (ETCon "Float")
                                   _                                               -> t
     where
-        isString (ETyCon (ETCon "String")) = True
-        isString _ = False
         isComparable (ETyCon (ETCon n)) = n `elem` ["String", "Int"]
-        isComparable _ = False -- TODO check what Elm actually uses
+        isComparable _                  = False -- TODO check what Elm actually uses
         tc = ETyCon . ETCon
-        checkMap k v | isString k = ETyApp (ETyApp (tc "Dict") k) v
-                     | otherwise  = ETyApp (tc "List") (ETyApp (ETyApp (ETyTuple 2) k) v)
         checkSet s | isComparable s = ETyApp (ETyCon (ETCon "Set")) s
                    | otherwise = ETyApp (ETyCon (ETCon "List")) s
-

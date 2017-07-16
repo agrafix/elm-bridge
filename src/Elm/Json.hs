@@ -12,12 +12,12 @@ module Elm.Json
     )
 where
 
-import Data.List
-import Data.Either (isLeft)
-import Data.Aeson.Types (SumEncoding(..))
+import           Data.Aeson.Types (SumEncoding (..))
+import           Data.Either      (isLeft)
+import           Data.List
 
-import Elm.TyRep
-import Elm.Utils
+import           Elm.TyRep
+import           Elm.Utils
 
 data MaybeHandling = Root | Leaf
                    deriving Eq
@@ -27,7 +27,7 @@ jsonParserForType = jsonParserForType' Leaf
 
 isOption :: EType -> Bool
 isOption (ETyApp (ETyCon (ETCon "Maybe")) _) = True
-isOption _ = False
+isOption _                                   = False
 
 -- | Compile a JSON parser for an Elm type
 jsonParserForType' :: MaybeHandling -> EType -> String
@@ -44,8 +44,7 @@ jsonParserForType' mh ty =
                                                 then jsonParserForType t'
                                                 else "Json.Decode.maybe (" ++ jsonParserForType t' ++ ")"
       ETyApp (ETyCon (ETCon "Set")) t' -> "decodeSet (" ++ jsonParserForType t' ++ ")"
-      ETyApp (ETyApp (ETyCon (ETCon "Dict")) (ETyCon (ETCon "String")) ) value -> "Json.Decode.dict (" ++ jsonParserForType value ++ ")"
-      ETyApp (ETyApp (ETyCon (ETCon "Dict")) key) value -> "decodeMap (" ++ jsonParserForType key ++ ") (" ++ jsonParserForType value ++ ")"
+      ETyApp (ETyApp (ETyCon (ETCon "EveryDict")) key) value -> "decodeMap (" ++ jsonParserForType key ++ ") (" ++ jsonParserForType value ++ ")"
       _ ->
           case unpackTupleType ty of
             [] -> error $ "This should never happen. Failed to unpackTupleType: " ++ show ty
@@ -83,7 +82,7 @@ allUnaries False = const Nothing
 allUnaries True  = mapM isUnary
     where
         isUnary (x, Right args) = if null args then Just x else Nothing
-        isUnary _ = Nothing
+        isUnary _               = Nothing
 
 -- | Compile a JSON parser for an Elm type definition
 jsonParserForDef :: ETypeDef -> String
@@ -113,16 +112,16 @@ jsonParserForDef etd =
                            ObjectWithSingleField -> unwords [ "decodeSumObjectWithSingleField ", show typename, dictName]
                            TwoElemArray          -> unwords [ "decodeSumTwoElemArray ", show typename, dictName ]
                            TaggedObject tg el    -> unwords [ "decodeSumTaggedObject", show typename, show tg, show el, dictName, isObjectSetName ]
-                           UntaggedValue         -> "Json.Decode.oneOf (Dict.values " ++ dictName ++ ")"
+                           UntaggedValue         -> "Json.Decode.oneOf (EveryDict.values " ++ dictName ++ ")"
             dictName = "jsonDecDict" ++ typename
             isObjectSetName = "jsonDecObjectSet" ++ typename
             deriveUnaries strs = unlines
                 [ ""
-                , "    let " ++ dictName ++ " = Dict.fromList [" ++ intercalate ", " (map (\s -> "(" ++ show s ++ ", " ++ cap s ++ ")") strs ) ++ "]"
+                , "    let " ++ dictName ++ " = EveryDict.fromList [" ++ intercalate ", " (map (\s -> "(" ++ show s ++ ", " ++ cap s ++ ")") strs ) ++ "]"
                 , "    in  decodeSumUnaries " ++ show typename ++ " " ++ dictName
                 ]
             encodingDictionary [(oname, args)] = "    " ++ mkDecoder oname args
-            encodingDictionary os = tab 4 "let " ++ dictName ++ " = Dict.fromList\n" ++ tab 12 "[ " ++ intercalate ("\n" ++ replicate 12 ' ' ++ ", ") (map dictEntry os) ++ "\n" ++ tab 12 "]"
+            encodingDictionary os = tab 4 "let " ++ dictName ++ " = EveryDict.fromList\n" ++ tab 12 "[ " ++ intercalate ("\n" ++ replicate 12 ' ' ++ ", ") (map dictEntry os) ++ "\n" ++ tab 12 "]"
             isObjectSet = case encodingType of
                               TaggedObject _ _ -> "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " (map (show . fst) $ filter (isLeft . snd) opts) ++ "]")
                               _ -> ""
@@ -171,7 +170,7 @@ jsonSerForType' omitnull ty =
                                                 then jsonSerForType t'
                                                 else "(maybeEncode (" ++ jsonSerForType t' ++ "))"
       ETyApp (ETyCon (ETCon "Set")) t' -> "(encodeSet " ++ jsonSerForType t' ++ ")"
-      ETyApp (ETyApp (ETyCon (ETCon "Dict")) key) value -> "(encodeMap (" ++ jsonSerForType key ++ ") (" ++ jsonSerForType value ++ "))"
+      ETyApp (ETyApp (ETyCon (ETCon "EveryDict")) key) value -> "(encodeMap (" ++ jsonSerForType key ++ ") (" ++ jsonSerForType value ++ "))"
       _ ->
           case unpackTupleType ty of
             [] -> error $ "This should never happen. Failed to unpackTupleType: " ++ show ty
@@ -204,7 +203,7 @@ jsonSerForDef etd =
           ++ "\n   ]\n"
       ETypeSum (ESum name opts (SumEncoding' se) _ unarystring) ->
         case allUnaries unarystring opts of
-            Nothing -> defaultEncoding opts
+            Nothing   -> defaultEncoding opts
             Just strs -> unaryEncoding strs
           where
               encodeFunction = case se of
@@ -214,7 +213,7 @@ jsonSerForDef etd =
                                    UntaggedValue -> "encodeSumUntagged"
               defaultEncoding [(oname, Right args)] = unlines $
                 [ makeType name
-                , fname name ++ " " 
+                , fname name ++ " "
                     ++ unwords (map (\tv -> "localEncoder_" ++ tv_name tv) $ et_args name)
                     ++ "(" ++ cap oname  ++ " " ++ argList args ++ ") ="
                 , "    " ++ mkEncodeList args

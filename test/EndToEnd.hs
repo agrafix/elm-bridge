@@ -1,19 +1,19 @@
+{-# LANGUAGE CPP             #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE CPP #-}
 module Main where
 
-import Elm.Derive
-import Elm.Module
-import Data.Proxy
-import Data.Aeson hiding (defaultOptions)
-import Data.Aeson.Types (SumEncoding(..))
-import Test.QuickCheck.Arbitrary
-import Test.QuickCheck.Gen (sample', oneof, Gen)
-import qualified Data.Text as T
-import Control.Applicative
-import System.Environment
-import Data.Char (toLower)
-import Prelude
+import           Control.Applicative
+import           Data.Aeson                hiding (defaultOptions)
+import           Data.Aeson.Types          (SumEncoding (..))
+import           Data.Char                 (toLower)
+import           Data.Proxy
+import qualified Data.Text                 as T
+import           Elm.Derive
+import           Elm.Module
+import           Prelude
+import           System.Environment
+import           Test.QuickCheck.Arbitrary
+import           Test.QuickCheck.Gen       (Gen, oneof, sample')
 
 data Record1 a = Record1 { _r1foo :: Int, _r1bar :: Maybe Int, _r1baz :: a, _r1qux :: Maybe a } deriving Show
 data Record2 a = Record2 { _r2foo :: Int, _r2bar :: Maybe Int, _r2baz :: a, _r2qux :: Maybe a } deriving Show
@@ -118,7 +118,7 @@ elmModuleContent = unlines
     , "-- * bartavelle/json-helpers"
     , "module MyTests exposing (..)"
     , ""
-    , "import Dict exposing (Dict)"
+    , "import EveryDict exposing (EveryDict)"
     , "import Set exposing (Set)"
     , "import Json.Decode exposing (field, Value)"
     , "import Json.Encode"
@@ -361,4 +361,3 @@ main = do
                        , mkSumEncodeTest "Untagged" sm
                        , mkSumDecodeTest "Untagged" sm
                        ]
-

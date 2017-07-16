@@ -1,28 +1,28 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Elm.JsonSpec (spec) where
 
-import Elm.Derive
-import Elm.TyRep
-import Elm.Json
+import           Elm.Derive
+import           Elm.Json
+import           Elm.TyRep
 
-import Data.Proxy
-import Test.Hspec
-import Data.Char (toLower)
-import Data.Aeson.Types (SumEncoding(..))
-import qualified Data.Map.Strict as M
+import           Data.Aeson.Types (SumEncoding (..))
+import           Data.Char        (toLower)
+import qualified Data.Map.Strict  as M
+import           Data.Proxy
+import           Test.Hspec
 
 data Foo
    = Foo
-   { f_name :: String
+   { f_name    :: String
    , f_blablub :: Int
    } deriving (Show, Eq)
 
 data Bar a
    = Bar
-   { b_name :: a
+   { b_name    :: a
    , b_blablub :: Int
-   , b_tuple :: (Int, String)
-   , b_list :: [Bool]
+   , b_tuple   :: (Int, String)
+   , b_list    :: [Bool]
    } deriving (Show, Eq)
 
 data SomeOpts a
@@ -105,7 +105,7 @@ bazParse :: String
 bazParse = unlines
     [ "jsonDecBaz : Json.Decode.Decoder a -> Json.Decode.Decoder ( Baz a )"
     , "jsonDecBaz localDecoder_a ="
-    , "    let jsonDecDictBaz = Dict.fromList"
+    , "    let jsonDecDictBaz = EveryDict.fromList"
     , "            [ (\"Baz1\", Json.Decode.map Baz1 (   (\"foo\" := Json.Decode.int) >>= \\pfoo ->    (\"qux\" := jsonDecMap (Json.Decode.int) (localDecoder_a)) >>= \\pqux ->    Json.Decode.succeed {foo = pfoo, qux = pqux}))"
     , "            , (\"Baz2\", Json.Decode.map Baz2 (   (Json.Decode.maybe (\"bar\" := Json.Decode.int)) >>= \\pbar ->    (\"str\" := Json.Decode.string) >>= \\pstr ->    Json.Decode.succeed {bar = pbar, str = pstr}))"
     , "            , (\"Testing\", Json.Decode.map Testing (jsonDecBaz (localDecoder_a)))"
@@ -123,7 +123,7 @@ someOptsParse :: String
 someOptsParse = unlines
     [ "jsonDecSomeOpts : Json.Decode.Decoder a -> Json.Decode.Decoder ( SomeOpts a )"
     , "jsonDecSomeOpts localDecoder_a ="
-    , "    let jsonDecDictSomeOpts = Dict.fromList"
+    , "    let jsonDecDictSomeOpts = EveryDict.fromList"
     , "            [ (\"Okay\", Json.Decode.map Okay (Json.Decode.int))"
     , "            , (\"NotOkay\", Json.Decode.map NotOkay (localDecoder_a))"
     , "            ]"
@@ -153,7 +153,7 @@ unaryAParse :: String
 unaryAParse = unlines
     [ "jsonDecUnaryA : Json.Decode.Decoder ( UnaryA )"
     , "jsonDecUnaryA ="
-    , "    let jsonDecDictUnaryA = Dict.fromList"
+    , "    let jsonDecDictUnaryA = EveryDict.fromList"
     , "            [ (\"UnaryA1\", Json.Decode.succeed UnaryA1)"
     , "            , (\"UnaryA2\", Json.Decode.succeed UnaryA2)"
     , "            ]"
@@ -164,7 +164,7 @@ unaryBParse :: String
 unaryBParse = unlines
     [ "jsonDecUnaryB : Json.Decode.Decoder ( UnaryB )"
     , "jsonDecUnaryB = "
-    , "    let jsonDecDictUnaryB = Dict.fromList [(\"UnaryB1\", UnaryB1), (\"UnaryB2\", UnaryB2)]"
+    , "    let jsonDecDictUnaryB = EveryDict.fromList [(\"UnaryB1\", UnaryB1), (\"UnaryB2\", UnaryB2)]"
     , "    in  decodeSumUnaries \"UnaryB\" jsonDecDictUnaryB"
     ]
 
