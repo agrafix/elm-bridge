@@ -127,12 +127,13 @@ jsonParserForDef etd =
                               TaggedObject _ _ -> "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " (map (show . fst) $ filter (isLeft . snd) opts) ++ "]")
                               _ -> ""
             dictEntry (oname, args) = "(" ++ show oname ++ ", " ++ mkDecoder oname args ++ ")"
-            mkDecoder oname (Left args)  =  "Json.Decode.map "
+            mkDecoder oname (Left args)  =  lazy $ "Json.Decode.map "
                                          ++ cap oname
                                          ++ " ("
                                          ++ unwords (parseRecords Nothing False args)
                                          ++ ")"
-            mkDecoder oname (Right args) = unwords ( decodeFunction
+
+            mkDecoder oname (Right args) = lazy $ unwords ( decodeFunction
                                                    : cap oname
                                                    : zipWith (\t' i -> "(" ++ jsonParserForIndexedType t' i ++ ")") args [0..]
                                                    )
@@ -149,6 +150,7 @@ jsonParserForDef etd =
       decoderType name = funcname name ++ " : " ++ intercalate " -> " (prependTypes "Json.Decode.Decoder " name ++ [decoderTypeEnd name])
       decoderTypeEnd name = unwords ("Json.Decode.Decoder" : "(" : et_name name : map tv_name (et_args name) ++ [")"])
       makeName name = unwords (funcname name : prependTypes "localDecoder_" name)
+      lazy decoder = "Json.Decode.lazy (\\_ -> " ++ decoder ++ ")"
 
 {-| Compile a JSON serializer for an Elm type.
 
@@ -214,7 +216,7 @@ jsonSerForDef etd =
                                    UntaggedValue -> "encodeSumUntagged"
               defaultEncoding [(oname, Right args)] = unlines $
                 [ makeType name
-                , fname name ++ " " 
+                , fname name ++ " "
                     ++ unwords (map (\tv -> "localEncoder_" ++ tv_name tv) $ et_args name)
                     ++ "(" ++ cap oname  ++ " " ++ argList args ++ ") ="
                 , "    " ++ mkEncodeList args
