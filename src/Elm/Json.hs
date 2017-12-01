@@ -127,7 +127,7 @@ jsonParserForDef etd =
                               TaggedObject _ _ -> "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " (map (show . fst) $ filter (isLeft . snd) opts) ++ "]")
                               _ -> ""
             dictEntry (oname, args) = "(" ++ show oname ++ ", " ++ mkDecoder oname args ++ ")"
-            mkDecoder oname (Left args)  =  "Json.Decode.map "
+            mkDecoder oname (Left args)  =  lazy $ "Json.Decode.map "
                                          ++ cap oname
                                          ++ " ("
                                          ++ unwords (parseRecords Nothing False args)
