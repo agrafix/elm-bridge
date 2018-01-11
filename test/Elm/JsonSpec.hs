@@ -48,6 +48,9 @@ data DoneState   = Done | NotDone deriving (Eq, Show)
 data Id = Id String deriving (Show, Eq)
 data EditDone = EditDone Id DoneState DoneState deriving (Show, Eq)
 
+newtype NTA = NTA Int
+newtype NTB = NTB { getNtb :: Int }
+
 $(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
 $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef (defaultOptionsDropLower 1) ''TestComp)
@@ -58,6 +61,8 @@ $(deriveElmDef defaultOptions { fieldLabelModifier = drop 1 . map toLower } ''Ba
 $(deriveElmDef (defaultOptions { sumEncoding = defaultTaggedObject }) ''DoneState)
 $(deriveElmDef (TH.defaultOptions { sumEncoding = TH.defaultTaggedObject }) ''Id)
 $(deriveElmDef (TH.defaultOptions { sumEncoding = TH.defaultTaggedObject }) ''EditDone)
+$(deriveElmDef defaultOptions ''NTA)
+$(deriveElmDef defaultOptions ''NTB)
 
 fooSer :: String
 fooSer = "jsonEncFoo : Foo -> Value\njsonEncFoo  val =\n   Json.Encode.object\n   [ (\"name\", Json.Encode.string val.name)\n   , (\"blablub\", Json.Encode.int val.blablub)\n   ]\n"
@@ -209,6 +214,20 @@ idParse = unlines
   , ""
   ]
 
+ntaParse :: String
+ntaParse = unlines
+  [ "jsonDecNTA : Json.Decode.Decoder ( NTA )"
+  , "jsonDecNTA ="
+  , "    Json.Decode.int"
+  ]
+
+ntbParse :: String
+ntbParse = unlines
+  [ "jsonDecNTB : Json.Decode.Decoder ( NTB )"
+  , "jsonDecNTB ="
+  , "    Json.Decode.int"
+  ]
+
 spec :: Spec
 spec =
     describe "json serialisation" $
@@ -222,6 +241,8 @@ spec =
            rDoneState = compileElmDef (Proxy :: Proxy DoneState)
            rId = compileElmDef (Proxy :: Proxy Id)
            rEditDone = compileElmDef (Proxy :: Proxy EditDone)
+           rNTA = compileElmDef (Proxy :: Proxy NTA)
+           rNTB = compileElmDef (Proxy :: Proxy NTB)
        it "should produce the correct ser code" $ do
              jsonSerForDef rFoo `shouldBe` fooSer
              jsonSerForDef rBar `shouldBe` barSer
@@ -244,3 +265,6 @@ spec =
              jsonParserForDef rDoneState `shouldBe` doneParse
              jsonParserForDef rId `shouldBe` idParse
              jsonParserForDef rEditDone `shouldBe` editDoneParse
+       it "should produce the correct parse code for newtypes" $ do
+            jsonParserForDef rNTA `shouldBe` ntaParse
+            jsonParserForDef rNTB `shouldBe` ntbParse

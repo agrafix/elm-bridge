@@ -92,7 +92,7 @@ jsonParserForDef etd =
       ETypePrimAlias (EPrimAlias name ty) -> unlines
           [ decoderType name
           , makeName name ++  " ="
-          , jsonParserForType ty
+          , "    " ++ jsonParserForType ty
           ]
       ETypeAlias (EAlias name fields _ newtyping unwrap) -> unlines
           ( decoderType name

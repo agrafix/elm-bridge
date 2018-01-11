@@ -125,10 +125,10 @@ runDerive name vars mkBody =
                 PlainTV tv -> tv
                 KindedTV tv _ -> tv
 
-deriveAlias :: A.Options -> Name -> [TyVarBndr] -> [VarStrictType] -> Q [Dec]
-deriveAlias opts name vars conFields =
+deriveAlias :: Bool -> A.Options -> Name -> [TyVarBndr] -> [VarStrictType] -> Q [Dec]
+deriveAlias isNewtype opts name vars conFields =
         runDerive name vars $ \typeName ->
-                [|ETypeAlias (EAlias $typeName $fields omitNothing False unwrapUnary)|] -- default to no newtype
+                [|ETypeAlias (EAlias $typeName $fields omitNothing isNewtype unwrapUnary)|] -- default to no newtype
     where
       unwrapUnary = unwrapUnaryRecords opts
       fields = listE $ map mkField conFields
@@ -192,14 +192,17 @@ deriveElmDef opts name =
 
              case constrs of
                [] -> fail "Can not derive empty data decls"
-               [RecC _ conFields] -> deriveAlias opts name tyVars conFields
+               [RecC _ conFields] -> deriveAlias False opts name tyVars conFields
                _ -> deriveSum opts name tyVars constrs
 #if __GLASGOW_HASKELL__ >= 800
-         NewtypeD _ _ tyVars _ (RecC _ conFields) _ ->
+         NewtypeD [] _ [] Nothing (NormalC _ [(Bang NoSourceUnpackedness NoSourceStrictness, otherTy)]) [] ->
+             deriveSynonym opts name [] otherTy
+         NewtypeD [] _ [] Nothing (RecC _ [(_, Bang NoSourceUnpackedness NoSourceStrictness, otherTy)]) [] ->
+             deriveSynonym opts name [] otherTy
 #else
          NewtypeD _ _ tyVars (RecC _ conFields) _ ->
+             deriveAlias True opts name tyVars conFields
 #endif
-             deriveAlias opts name tyVars conFields
          TySynD _ vars otherTy ->
              deriveSynonym opts name vars otherTy
          _ -> fail ("Oops, can only derive data and newtype, not this: " ++ show tyCon)
