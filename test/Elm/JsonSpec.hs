@@ -8,7 +8,7 @@ import Elm.Json
 import Data.Proxy
 import Test.Hspec
 import Data.Char (toLower)
-import Data.Aeson.Types (SumEncoding(..))
+import Data.Aeson.Types (SumEncoding(..),defaultTaggedObject)
 import qualified Data.Map.Strict as M
 
 data Foo
@@ -42,9 +42,10 @@ data TestComp a = TestComp { _t1 :: Change Int
                            , _t2 :: Change a
                            }
 
--- TODO
-data Qux a = Qux1 { _quxfoo :: Int, _quxqux :: a }
-           | Qux2 Int (M.Map Int a)
+data DoneState   = Done | NotDone deriving (Eq, Show)
+
+data Id = Id String deriving (Show, Eq)
+data EditDone = EditDone Id DoneState DoneState deriving (Show, Eq)
 
 $(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
 $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
@@ -53,7 +54,9 @@ $(deriveElmDef defaultOptions ''SomeOpts)
 $(deriveElmDef defaultOptions{ allNullaryToStringTag = False } ''UnaryA)
 $(deriveElmDef defaultOptions{ allNullaryToStringTag = True  } ''UnaryB)
 $(deriveElmDef defaultOptions { fieldLabelModifier = drop 1 . map toLower } ''Baz)
-$(deriveElmDef defaultOptions { fieldLabelModifier = drop 4 . map toLower, sumEncoding = TaggedObject "tag" "value" } ''Qux)
+$(deriveElmDef (defaultOptions { sumEncoding = defaultTaggedObject }) ''DoneState)
+$(deriveElmDef defaultOptions ''Id)
+$(deriveElmDef defaultOptions ''EditDone)
 
 fooSer :: String
 fooSer = "jsonEncFoo : Foo -> Value\njsonEncFoo  val =\n   Json.Encode.object\n   [ (\"name\", Json.Encode.string val.name)\n   , (\"blablub\", Json.Encode.int val.blablub)\n   ]\n"
@@ -111,12 +114,6 @@ bazParse = unlines
     , "            , (\"Testing\", Json.Decode.map Testing (jsonDecBaz (localDecoder_a)))"
     , "            ]"
     , "    in  decodeSumObjectWithSingleField  \"Baz\" jsonDecDictBaz"
-    ]
-
-quxParse :: String
-quxParse = unlines
-    [ "jsonDecQux localDecoder_a ="
-    , "   "
     ]
 
 someOptsParse :: String
@@ -187,17 +184,22 @@ unaryBSer = unlines
     , "        UnaryB2 -> Json.Encode.string \"UnaryB2\""
     ]
 
+editDoneParse :: String
+editDoneParse = unlines
+  [ 
+  ]
+
 spec :: Spec
 spec =
     describe "json serialisation" $
     do let rFoo = compileElmDef (Proxy :: Proxy Foo)
            rBar = compileElmDef (Proxy :: Proxy (Bar a))
            rBaz = compileElmDef (Proxy :: Proxy (Baz a))
-           rQux = compileElmDef (Proxy :: Proxy (Qux a))
            rTest1 = compileElmDef (Proxy :: Proxy (TestComp a))
            rSomeOpts = compileElmDef (Proxy :: Proxy (SomeOpts a))
            rUnaryA = compileElmDef (Proxy :: Proxy UnaryA)
            rUnaryB = compileElmDef (Proxy :: Proxy UnaryB)
+           rDoneState = compileElmDef (Proxy :: Proxy DoneState)
        it "should produce the correct ser code" $ do
              jsonSerForDef rFoo `shouldBe` fooSer
              jsonSerForDef rBar `shouldBe` barSer
@@ -216,3 +218,5 @@ spec =
        it "should produce the correct parse code for unary unions" $ do
              jsonParserForDef rUnaryA `shouldBe` unaryAParse
              jsonParserForDef rUnaryB `shouldBe` unaryBParse
+       it "should produce the correct parse code for issue #18" $ do
+             jsonParserForDef rDoneState `shouldBe` editDoneParse
