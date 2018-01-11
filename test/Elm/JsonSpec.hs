@@ -10,6 +10,7 @@ import Test.Hspec
 import Data.Char (toLower)
 import Data.Aeson.Types (SumEncoding(..),defaultTaggedObject)
 import qualified Data.Map.Strict as M
+import qualified Data.Aeson.TH as TH
 
 data Foo
    = Foo
@@ -55,8 +56,8 @@ $(deriveElmDef defaultOptions{ allNullaryToStringTag = False } ''UnaryA)
 $(deriveElmDef defaultOptions{ allNullaryToStringTag = True  } ''UnaryB)
 $(deriveElmDef defaultOptions { fieldLabelModifier = drop 1 . map toLower } ''Baz)
 $(deriveElmDef (defaultOptions { sumEncoding = defaultTaggedObject }) ''DoneState)
-$(deriveElmDef defaultOptions ''Id)
-$(deriveElmDef defaultOptions ''EditDone)
+$(deriveElmDef (TH.defaultOptions { sumEncoding = TH.defaultTaggedObject }) ''Id)
+$(deriveElmDef (TH.defaultOptions { sumEncoding = TH.defaultTaggedObject }) ''EditDone)
 
 fooSer :: String
 fooSer = "jsonEncFoo : Foo -> Value\njsonEncFoo  val =\n   Json.Encode.object\n   [ (\"name\", Json.Encode.string val.name)\n   , (\"blablub\", Json.Encode.int val.blablub)\n   ]\n"
@@ -184,9 +185,28 @@ unaryBSer = unlines
     , "        UnaryB2 -> Json.Encode.string \"UnaryB2\""
     ]
 
+doneParse :: String
+doneParse = unlines
+  [ "jsonDecDoneState : Json.Decode.Decoder ( DoneState )"
+  , "jsonDecDoneState = "
+  , "    let jsonDecDictDoneState = Dict.fromList [(\"Done\", Done), (\"NotDone\", NotDone)]"
+  , "    in  decodeSumUnaries \"DoneState\" jsonDecDictDoneState"
+  ]
+
 editDoneParse :: String
 editDoneParse = unlines
-  [ 
+  [ "jsonDecEditDone : Json.Decode.Decoder ( EditDone )"
+  , "jsonDecEditDone ="
+  , "    Json.Decode.lazy (\\_ -> Json.Decode.map3 EditDone (Json.Decode.index 0 (jsonDecId)) (Json.Decode.index 1 (jsonDecDoneState)) (Json.Decode.index 2 (jsonDecDoneState)))"
+  , ""
+  ]
+
+idParse :: String
+idParse = unlines
+  [ "jsonDecId : Json.Decode.Decoder ( Id )"
+  , "jsonDecId ="
+  , "    Json.Decode.lazy (\\_ -> Json.Decode.map Id (Json.Decode.string))"
+  , ""
   ]
 
 spec :: Spec
@@ -200,6 +220,8 @@ spec =
            rUnaryA = compileElmDef (Proxy :: Proxy UnaryA)
            rUnaryB = compileElmDef (Proxy :: Proxy UnaryB)
            rDoneState = compileElmDef (Proxy :: Proxy DoneState)
+           rId = compileElmDef (Proxy :: Proxy Id)
+           rEditDone = compileElmDef (Proxy :: Proxy EditDone)
        it "should produce the correct ser code" $ do
              jsonSerForDef rFoo `shouldBe` fooSer
              jsonSerForDef rBar `shouldBe` barSer
@@ -219,4 +241,6 @@ spec =
              jsonParserForDef rUnaryA `shouldBe` unaryAParse
              jsonParserForDef rUnaryB `shouldBe` unaryBParse
        it "should produce the correct parse code for issue #18" $ do
-             jsonParserForDef rDoneState `shouldBe` editDoneParse
+             jsonParserForDef rDoneState `shouldBe` doneParse
+             jsonParserForDef rId `shouldBe` idParse
+             jsonParserForDef rEditDone `shouldBe` editDoneParse
