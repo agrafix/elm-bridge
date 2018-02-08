@@ -110,6 +110,7 @@ defaultAlterations = recAlterType $ \t -> case t of
                                   ETyApp (ETyApp (ETyCon (ETCon "THashMap")) k) v -> checkMap k v
                                   ETyApp (ETyApp (ETyCon (ETCon "Map")) k) v      -> checkMap k v
                                   ETyCon (ETCon "Integer")                        -> ETyCon (ETCon "Int")
+                                  ETyCon (ETCon "Natural")                        -> ETyCon (ETCon "Int")
                                   ETyCon (ETCon "Text")                           -> ETyCon (ETCon "String")
                                   ETyCon (ETCon "Vector")                         -> ETyCon (ETCon "List")
                                   ETyCon (ETCon "Double")                         -> ETyCon (ETCon "Float")
