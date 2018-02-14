@@ -50,6 +50,8 @@ data EditDone = EditDone Id DoneState DoneState deriving (Show, Eq)
 
 newtype NTA = NTA Int
 newtype NTB = NTB { getNtb :: Int }
+newtype NTC = NTC Int
+newtype NTD = NTD { getNtd :: Int }
 
 $(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
 $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
@@ -63,6 +65,8 @@ $(deriveElmDef (TH.defaultOptions { sumEncoding = TH.defaultTaggedObject }) ''Id
 $(deriveElmDef (TH.defaultOptions { sumEncoding = TH.defaultTaggedObject }) ''EditDone)
 $(deriveElmDef defaultOptions ''NTA)
 $(deriveElmDef defaultOptions ''NTB)
+$(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''NTC)
+$(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''NTD)
 
 fooSer :: String
 fooSer = "jsonEncFoo : Foo -> Value\njsonEncFoo  val =\n   Json.Encode.object\n   [ (\"name\", Json.Encode.string val.name)\n   , (\"blablub\", Json.Encode.int val.blablub)\n   ]\n"
@@ -228,6 +232,20 @@ ntbParse = unlines
   , "    Json.Decode.int"
   ]
 
+ntcParse :: String
+ntcParse = unlines
+  [ "jsonDecNTC : Json.Decode.Decoder ( NTC )"
+  , "jsonDecNTC ="
+  , "    Json.Decode.int"
+  ]
+
+ntdParse :: String
+ntdParse = unlines
+  [ "jsonDecNTD : Json.Decode.Decoder ( NTD )"
+  , "jsonDecNTD ="
+  , "    Json.Decode.int"
+  ]
+
 spec :: Spec
 spec =
     describe "json serialisation" $
@@ -265,6 +283,9 @@ spec =
              jsonParserForDef rDoneState `shouldBe` doneParse
              jsonParserForDef rId `shouldBe` idParse
              jsonParserForDef rEditDone `shouldBe` editDoneParse
-       it "should produce the correct parse code for newtypes" $ do
+       it "should produce the correct parse code for newtypes with unwrapUnaryRecords=True" $ do
+            jsonParserForDef rNTA `shouldBe` ntaParse
+            jsonParserForDef rNTB `shouldBe` ntbParse
+       it "should produce the correct parse code for newtypes with unwrapUnaryRecords=False" $ do
             jsonParserForDef rNTA `shouldBe` ntaParse
             jsonParserForDef rNTB `shouldBe` ntbParse

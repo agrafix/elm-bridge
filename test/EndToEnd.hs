@@ -43,6 +43,105 @@ data SimpleRecord04 a = SimpleRecord04 { _s04qux :: a } deriving Show
 data SumUntagged a = SMInt Int | SMList a
               deriving Show
 
+newtype NTA = NTA [Int] deriving Show
+newtype NTB = NTB { _ntb :: [Int] } deriving Show
+newtype NTC = NTC [Int] deriving Show
+newtype NTD = NTD { _ntc :: [Int] } deriving Show
+
+extractNTA :: NTA -> [Int]
+extractNTA (NTA x) =x
+extractNTB :: NTB -> [Int]
+extractNTB (NTB x) =x
+extractNTC :: NTC -> [Int]
+extractNTC (NTC x) =x
+extractNTD :: NTD -> [Int]
+extractNTD (NTD x) =x
+
+mkDecodeTest :: (Show a, ToJSON a) => String -> String -> String -> [a] -> String
+mkDecodeTest pred prefix num elems = unlines (
+    [ map toLower pred ++ "Decode" ++ num ++ " : Test"
+    , map toLower pred ++ "Decode" ++ num ++ " = describe \"" ++ pred ++ " decode " ++ num ++ "\""
+    ]
+    ++ map mktest (zip ([1..] :: [Int]) elems)
+    ++ ["  ]"]
+    )
+  where
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (\\_ -> equal (Ok (" ++ pretty ++ ")) (Json.Decode.decodeString (jsonDec" ++ pred ++ num ++ " (Json.Decode.list Json.Decode.int)) " ++ encoded ++ "))"
+        where
+            pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
+            encoded = show (encode e)
+            pfix = if n == 1 then "  [ " else "  , "
+
+mkDecodeTestNT :: ToJSON n => String -> String -> String -> (n -> [Int]) -> [n] -> String
+mkDecodeTestNT pred prefix num extract elems = unlines (
+    [ map toLower pred ++ "Decode" ++ num ++ " : Test"
+    , map toLower pred ++ "Decode" ++ num ++ " = describe \"" ++ pred ++ " decode " ++ num ++ "\""
+    ]
+    ++ map mktest (zip ([1..] :: [Int]) elems)
+    ++ ["  ]"]
+    )
+  where
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (\\_ -> equal (Ok (" ++ pretty ++ ")) (Json.Decode.decodeString jsonDec" ++ pred ++ num ++ " " ++ encoded ++ "))"
+        where
+            pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show (extract e)
+            encoded = show (encode e)
+            pfix = if n == 1 then "  [ " else "  , "
+
+mkSumDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSumDecodeTest = mkDecodeTest "Sum" "_s"
+
+mkRecordDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkRecordDecodeTest = mkDecodeTest "Record" "_r"
+
+mkEncodeTest :: (Show a, ToJSON a) => String -> String -> String -> [a] -> String
+mkEncodeTest pred prefix num elems = unlines (
+    [ map toLower pred ++ "Encode" ++ num ++ " : Test"
+    , map toLower pred ++ "Encode" ++ num ++ " = describe \"" ++ pred ++ " encode " ++ num ++ "\""
+    ]
+    ++ map mktest (zip ([1..] :: [Int]) elems)
+    ++ ["  ]"]
+    )
+  where
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (\\_ -> equalHack " ++ encoded ++ "(Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ "(Json.Encode.list << List.map Json.Encode.int) (" ++ pretty ++ "))))"
+        where
+            pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
+            encoded = show (encode e)
+            pfix = if n == 1 then "  [ " else "  , "
+
+mkEncodeTestNT :: (Show a, ToJSON n) => String -> String -> String -> (n -> a) -> [n] -> String
+mkEncodeTestNT pred prefix num extract elems = unlines (
+    [ map toLower pred ++ "Encode" ++ num ++ " : Test"
+    , map toLower pred ++ "Encode" ++ num ++ " = describe \"" ++ pred ++ " encode " ++ num ++ "\""
+    ]
+    ++ map mktest (zip ([1..] :: [Int]) elems)
+    ++ ["  ]"]
+    )
+  where
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (\\_ -> equalHack " ++ encoded ++ "(Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ " (" ++ pretty ++ "))))"
+        where
+            pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show (extract e)
+            encoded = show (encode e)
+            pfix = if n == 1 then "  [ " else "  , "
+
+mkSumEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSumEncodeTest = mkEncodeTest "Sum" "_s"
+
+mkRecordEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkRecordEncodeTest = mkEncodeTest "Record" "_r"
+
+mkSimpleRecordDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSimpleRecordDecodeTest = mkDecodeTest "SimpleRecord" "_s"
+
+mkSimpleRecordEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSimpleRecordEncodeTest = mkEncodeTest "SimpleRecord" "_s"
+
+mkSimpleDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSimpleDecodeTest = mkDecodeTest "Simple" "_s"
+
+mkSimpleEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
+mkSimpleEncodeTest = mkEncodeTest "Simple" "_s"
+
+
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = False } ''Record1)
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = True  } ''Record2)
 
@@ -72,6 +171,11 @@ $(deriveBoth defaultOptions{ allNullaryToStringTag = True , unwrapUnaryRecords =
 $(deriveBoth defaultOptions{ allNullaryToStringTag = True , unwrapUnaryRecords = True , fieldLabelModifier = drop 4 } ''SimpleRecord04)
 
 $(deriveBoth defaultOptions{ sumEncoding = UntaggedValue } ''SumUntagged)
+
+$(deriveBoth defaultOptions ''NTA)
+$(deriveBoth defaultOptions { fieldLabelModifier = drop 1 } ''NTB)
+$(deriveBoth defaultOptions { unwrapUnaryRecords = False }''NTC)
+$(deriveBoth defaultOptions { fieldLabelModifier = drop 1, unwrapUnaryRecords = False } ''NTD)
 
 instance Arbitrary a => Arbitrary (Record1 a) where
     arbitrary = Record1 <$> arbitrary <*> fmap Just arbitrary <*> arbitrary <*> fmap Just arbitrary
@@ -111,10 +215,16 @@ instance Arbitrary a => Arbitrary (SimpleRecord04 a) where arbitrary = SimpleRec
 
 instance Arbitrary a => Arbitrary (SumUntagged a) where arbitrary = oneof [ SMInt <$> arbitrary, SMList <$> arbitrary ]
 
+instance Arbitrary NTA where arbitrary = fmap NTA arbitrary
+instance Arbitrary NTB where arbitrary = fmap NTB arbitrary
+instance Arbitrary NTC where arbitrary = fmap NTC arbitrary
+instance Arbitrary NTD where arbitrary = fmap NTD arbitrary
+
 elmModuleContent :: String
 elmModuleContent = unlines
     [ "-- This module requires the following packages:"
     , "-- * elm-community/elm-test"
+    , "-- * elm-community/html-test-runner"
     , "-- * bartavelle/json-helpers"
     , "module MyTests exposing (..)"
     , ""
@@ -126,6 +236,23 @@ elmModuleContent = unlines
     , "import Test exposing (..)"
     , "import Expect exposing (..)"
     , "import String"
+    , "import Test.Runner.Html"
+    , ""
+    , "newtypeDecode : Test"
+    , "newtypeDecode = describe \"Newtype decoding checks\""
+    , "              [ ntDecodeA"
+    , "              , ntDecodeB"
+    , "              , ntDecodeC"
+    , "              , ntDecodeD"
+    , "              ]"
+    , ""
+    , "newtypeEncode : Test"
+    , "newtypeEncode = describe \"Newtype encoding checks\""
+    , "              [ ntEncodeA"
+    , "              , ntEncodeB"
+    , "              , ntEncodeC"
+    , "              , ntEncodeD"
+    , "              ]"
     , ""
     , "recordDecode : Test"
     , "recordDecode = describe \"Record decoding checks\""
@@ -174,7 +301,7 @@ elmModuleContent = unlines
     , "              ]"
     , ""
     , "simpleDecode : Test"
-    , "simpleDecode = describe \"Simple records/types checks\""
+    , "simpleDecode = describe \"Simple records/types decode checks\""
     , "                [ simpleDecode01"
     , "                , simpleDecode02"
     , "                , simpleDecode03"
@@ -186,7 +313,7 @@ elmModuleContent = unlines
     , "                ]"
     , ""
     , "simpleEncode : Test"
-    , "simpleEncode = describe \"Simple records/types checks\""
+    , "simpleEncode = describe \"Simple records/types encode checks\""
     , "                [ simpleEncode01"
     , "                , simpleEncode02"
     , "                , simpleEncode03"
@@ -202,6 +329,9 @@ elmModuleContent = unlines
     , "equalHack a b ="
     , "    let remix = Json.Decode.decodeString Json.Decode.value"
     , "    in equal (remix a) (remix b)"
+    , ""
+    , "main : Test.Runner.Html.TestProgram"
+    , "main = concat [newtypeDecode, newtypeEncode, recordDecode, recordEncode, sumDecode, sumEncode, simpleDecode, simpleEncode ] |> Test.Runner.Html.run"
     , ""
     , makeModuleContentWithAlterations (newtypeAliases ["Record1", "Record2", "SimpleRecord01", "SimpleRecord02", "SimpleRecord03", "SimpleRecord04"] . defaultAlterations)
         [ DefineElm (Proxy :: Proxy (Record1 a))
@@ -227,62 +357,12 @@ elmModuleContent = unlines
         , DefineElm (Proxy :: Proxy (SimpleRecord03 a))
         , DefineElm (Proxy :: Proxy (SimpleRecord04 a))
         , DefineElm (Proxy :: Proxy (SumUntagged a))
+        , DefineElm (Proxy :: Proxy NTA)
+        , DefineElm (Proxy :: Proxy NTB)
+        , DefineElm (Proxy :: Proxy NTC)
+        , DefineElm (Proxy :: Proxy NTD)
         ]
     ]
-
-mkDecodeTest :: (Show a, ToJSON a) => String -> String -> String -> [a] -> String
-mkDecodeTest pred prefix num elems = unlines (
-    [ map toLower pred ++ "Decode" ++ num ++ " : Test"
-    , map toLower pred ++ "Decode" ++ num ++ " = describe \"" ++ pred ++ " decode " ++ num ++ "\""
-    ]
-    ++ map mktest (zip ([1..] :: [Int]) elems)
-    ++ ["  ]"]
-    )
-  where
-      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (\\_ -> equal (Ok (" ++ pretty ++ ")) (Json.Decode.decodeString (jsonDec" ++ pred ++ num ++ " (Json.Decode.list Json.Decode.int)) " ++ encoded ++ "))"
-        where
-            pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
-            encoded = show (encode e)
-            pfix = if n == 1 then "  [ " else "  , "
-
-mkSumDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
-mkSumDecodeTest = mkDecodeTest "Sum" "_s"
-
-mkRecordDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
-mkRecordDecodeTest = mkDecodeTest "Record" "_r"
-
-mkEncodeTest :: (Show a, ToJSON a) => String -> String -> String -> [a] -> String
-mkEncodeTest pred prefix num elems = unlines (
-    [ map toLower pred ++ "Encode" ++ num ++ " : Test"
-    , map toLower pred ++ "Encode" ++ num ++ " = describe \"" ++ pred ++ " encode " ++ num ++ "\""
-    ]
-    ++ map mktest (zip ([1..] :: [Int]) elems)
-    ++ ["  ]"]
-    )
-  where
-      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (\\_ -> equalHack " ++ encoded ++ "(Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ "(Json.Encode.list << List.map Json.Encode.int) (" ++ pretty ++ "))))"
-        where
-            pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
-            encoded = show (encode e)
-            pfix = if n == 1 then "  [ " else "  , "
-
-mkSumEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
-mkSumEncodeTest = mkEncodeTest "Sum" "_s"
-
-mkRecordEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
-mkRecordEncodeTest = mkEncodeTest "Record" "_r"
-
-mkSimpleRecordDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
-mkSimpleRecordDecodeTest = mkDecodeTest "SimpleRecord" "_s"
-
-mkSimpleRecordEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
-mkSimpleRecordEncodeTest = mkEncodeTest "SimpleRecord" "_s"
-
-mkSimpleDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
-mkSimpleDecodeTest = mkDecodeTest "Simple" "_s"
-
-mkSimpleEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
-mkSimpleEncodeTest = mkEncodeTest "Simple" "_s"
 
 main :: IO ()
 main = do
@@ -309,6 +389,10 @@ main = do
     sr03 <- sample' arbitrary :: IO [SimpleRecord03 [Int]]
     sr04 <- sample' arbitrary :: IO [SimpleRecord04 [Int]]
     sm   <- sample' arbitrary :: IO [SumUntagged [Int]]
+    nta  <- sample' arbitrary :: IO [NTA]
+    ntb  <- sample' arbitrary :: IO [NTB]
+    ntc  <- sample' arbitrary :: IO [NTC]
+    ntd  <- sample' arbitrary :: IO [NTD]
     args <- getArgs
     case args of
         [] -> return ()
@@ -360,5 +444,13 @@ main = do
                        , mkSimpleRecordDecodeTest "04" sr04
                        , mkSumEncodeTest "Untagged" sm
                        , mkSumDecodeTest "Untagged" sm
+                       , mkDecodeTestNT "NT" "_" "A" extractNTA nta
+                       , mkDecodeTestNT "NT" "_" "B" extractNTB ntb
+                       , mkDecodeTestNT "NT" "_" "C" extractNTC ntc
+                       , mkDecodeTestNT "NT" "_" "D" extractNTD ntd
+                       , mkEncodeTestNT "NT" "_" "A" extractNTA nta
+                       , mkEncodeTestNT "NT" "_" "B" extractNTB ntb
+                       , mkEncodeTestNT "NT" "_" "C" extractNTC ntc
+                       , mkEncodeTestNT "NT" "_" "D" extractNTD ntd
                        ]
 

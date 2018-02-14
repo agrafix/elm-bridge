@@ -48,6 +48,7 @@ test-suite end-to-end-tests
                        containers,
                        QuickCheck,
                        text
+  ghc-options:         -O0
   default-language:    Haskell2010
 
 test-suite derive-elm-tests
