@@ -13,6 +13,7 @@ import qualified Data.Text as T
 import Control.Applicative
 import System.Environment
 import Data.Char (toLower)
+import Data.List (stripPrefix)
 import Prelude
 
 data Record1 a = Record1 { _r1foo :: Int, _r1bar :: Maybe Int, _r1baz :: a, _r1qux :: Maybe a } deriving Show
@@ -43,19 +44,26 @@ data SimpleRecord04 a = SimpleRecord04 { _s04qux :: a } deriving Show
 data SumUntagged a = SMInt Int | SMList a
               deriving Show
 
-newtype NTA = NTA [Int] deriving Show
-newtype NTB = NTB { _ntb :: [Int] } deriving Show
-newtype NTC = NTC [Int] deriving Show
-newtype NTD = NTD { _ntd :: [Int] } deriving Show
+newtype NT1 = NT1 [Int] deriving Show
+newtype NT2 = NT2 { _nt2foo :: [Int] } deriving Show
+newtype NT3 = NT3 [Int] deriving Show
+newtype NT4 = NT4 { _nt4foo :: [Int] } deriving Show
 
-extractNTA :: NTA -> [Int]
-extractNTA (NTA x) =x
-extractNTB :: NTB -> [Int]
-extractNTB (NTB x) =x
-extractNTC :: NTC -> [Int]
-extractNTC (NTC x) =x
-extractNTD :: NTD -> [Int]
-extractNTD (NTD x) =x
+extractNT1 :: NT1 -> [Int]
+extractNT1 (NT1 x) =x
+extractNT2 :: NT2 -> [Int]
+extractNT2 (NT2 x) =x
+extractNT3 :: NT3 -> [Int]
+extractNT3 (NT3 x) =x
+
+dropAll :: String -> String -> String
+dropAll needle haystack
+  = case stripPrefix needle haystack of
+      Just nxt -> dropAll needle nxt
+      Nothing -> case haystack of
+                   [] -> []
+                   (x:xs) -> x : dropAll needle xs
+
 
 mkDecodeTest :: (Show a, ToJSON a) => String -> String -> String -> [a] -> String
 mkDecodeTest pred prefix num elems = unlines (
@@ -172,10 +180,10 @@ $(deriveBoth defaultOptions{ allNullaryToStringTag = True , unwrapUnaryRecords =
 
 $(deriveBoth defaultOptions{ sumEncoding = UntaggedValue } ''SumUntagged)
 
-$(deriveBoth defaultOptions ''NTA)
-$(deriveBoth defaultOptions { fieldLabelModifier = drop 1 } ''NTB)
-$(deriveBoth defaultOptions { unwrapUnaryRecords = False }''NTC)
-$(deriveBoth defaultOptions { fieldLabelModifier = drop 1, unwrapUnaryRecords = False } ''NTD)
+$(deriveBoth defaultOptions ''NT1)
+$(deriveBoth defaultOptions { fieldLabelModifier = drop 4 } ''NT2)
+$(deriveBoth defaultOptions { unwrapUnaryRecords = False }''NT3)
+$(deriveBoth defaultOptions { fieldLabelModifier = drop 4, unwrapUnaryRecords = False } ''NT4)
 
 instance Arbitrary a => Arbitrary (Record1 a) where
     arbitrary = Record1 <$> arbitrary <*> fmap Just arbitrary <*> arbitrary <*> fmap Just arbitrary
@@ -215,10 +223,10 @@ instance Arbitrary a => Arbitrary (SimpleRecord04 a) where arbitrary = SimpleRec
 
 instance Arbitrary a => Arbitrary (SumUntagged a) where arbitrary = oneof [ SMInt <$> arbitrary, SMList <$> arbitrary ]
 
-instance Arbitrary NTA where arbitrary = fmap NTA arbitrary
-instance Arbitrary NTB where arbitrary = fmap NTB arbitrary
-instance Arbitrary NTC where arbitrary = fmap NTC arbitrary
-instance Arbitrary NTD where arbitrary = fmap NTD arbitrary
+instance Arbitrary NT1 where arbitrary = fmap NT1 arbitrary
+instance Arbitrary NT2 where arbitrary = fmap NT2 arbitrary
+instance Arbitrary NT3 where arbitrary = fmap NT3 arbitrary
+instance Arbitrary NT4 where arbitrary = fmap NT4 arbitrary
 
 elmModuleContent :: String
 elmModuleContent = unlines
@@ -240,18 +248,18 @@ elmModuleContent = unlines
     , ""
     , "newtypeDecode : Test"
     , "newtypeDecode = describe \"Newtype decoding checks\""
-    , "              [ ntDecodeA"
-    , "              , ntDecodeB"
-    , "              , ntDecodeC"
-    , "              , ntDecodeD"
+    , "              [ ntDecode1"
+    , "              , ntDecode2"
+    , "              , ntDecode3"
+    , "              , ntDecode4"
     , "              ]"
     , ""
     , "newtypeEncode : Test"
     , "newtypeEncode = describe \"Newtype encoding checks\""
-    , "              [ ntEncodeA"
-    , "              , ntEncodeB"
-    , "              , ntEncodeC"
-    , "              , ntEncodeD"
+    , "              [ ntEncode1"
+    , "              , ntEncode2"
+    , "              , ntEncode3"
+    , "              , ntEncode4"
     , "              ]"
     , ""
     , "recordDecode : Test"
@@ -357,12 +365,13 @@ elmModuleContent = unlines
         , DefineElm (Proxy :: Proxy (SimpleRecord03 a))
         , DefineElm (Proxy :: Proxy (SimpleRecord04 a))
         , DefineElm (Proxy :: Proxy (SumUntagged a))
-        , DefineElm (Proxy :: Proxy NTA)
-        , DefineElm (Proxy :: Proxy NTB)
-        , DefineElm (Proxy :: Proxy NTC)
-        , DefineElm (Proxy :: Proxy NTD)
+        , DefineElm (Proxy :: Proxy NT1)
+        , DefineElm (Proxy :: Proxy NT2)
+        , DefineElm (Proxy :: Proxy NT3)
+        , DefineElm (Proxy :: Proxy NT4)
         ]
     ]
+
 
 main :: IO ()
 main = do
@@ -389,10 +398,10 @@ main = do
     sr03 <- sample' arbitrary :: IO [SimpleRecord03 [Int]]
     sr04 <- sample' arbitrary :: IO [SimpleRecord04 [Int]]
     sm   <- sample' arbitrary :: IO [SumUntagged [Int]]
-    nta  <- sample' arbitrary :: IO [NTA]
-    ntb  <- sample' arbitrary :: IO [NTB]
-    ntc  <- sample' arbitrary :: IO [NTC]
-    ntd  <- sample' arbitrary :: IO [NTD]
+    nt1  <- sample' arbitrary :: IO [NT1]
+    nt2  <- sample' arbitrary :: IO [NT2]
+    nt3  <- sample' arbitrary :: IO [NT3]
+    nt4  <- sample' arbitrary :: IO [NT4]
     args <- getArgs
     case args of
         [] -> return ()
@@ -444,13 +453,13 @@ main = do
                        , mkSimpleRecordDecodeTest "04" sr04
                        , mkSumEncodeTest "Untagged" sm
                        , mkSumDecodeTest "Untagged" sm
-                       , mkDecodeTestNT "NT" "_" "A" extractNTA nta
-                       , mkDecodeTestNT "NT" "_" "B" extractNTB ntb
-                       , mkEncodeTestNT "NT" "_" "A" extractNTA nta
-                       , mkEncodeTestNT "NT" "_" "B" extractNTB ntb
-                       , mkDecodeTest "NT" "_" "C" ntc
-                       , mkDecodeTest "NT" "_" "D" ntd
-                       , mkEncodeTest "NT" "_" "C" ntc
-                       , mkEncodeTest "NT" "_" "D" ntd
+                       , mkDecodeTestNT "NT" "_nt" "1" extractNT1 nt1
+                       , mkEncodeTestNT "NT" "_nt" "1" extractNT1 nt1
+                       , mkDecodeTestNT "NT" "_nt" "2" extractNT2 nt2
+                       , mkEncodeTestNT "NT" "_nt" "2" extractNT2 nt2
+                       , mkDecodeTestNT "NT" "_nt" "3" extractNT3 nt3
+                       , mkEncodeTestNT "NT" "_nt" "3" extractNT3 nt3
+                       , dropAll "(Json.Decode.list Json.Decode.int)" (mkDecodeTest "NT" "_nt" "4" nt4)
+                       , dropAll "(Json.Encode.list << List.map Json.Encode.int)" (mkEncodeTest "NT" "_nt" "4" nt4)
                        ]
 
