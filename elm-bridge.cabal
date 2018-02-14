@@ -63,7 +63,6 @@ test-suite derive-elm-tests
   build-depends:
                        base,
                        hspec >= 2.0,
-                       hspec-discover,
                        elm-bridge,
                        aeson,
                        containers
