@@ -243,7 +243,8 @@ ntdParse :: String
 ntdParse = unlines
   [ "jsonDecNTD : Json.Decode.Decoder ( NTD )"
   , "jsonDecNTD ="
-  , "    Json.Decode.int"
+  , "   (\"getNtd\" := Json.Decode.int) >>= \\pgetNtd ->"
+  , "   Json.Decode.succeed (NTD {getNtd = pgetNtd})"
   ]
 
 spec :: Spec
@@ -261,6 +262,8 @@ spec =
            rEditDone = compileElmDef (Proxy :: Proxy EditDone)
            rNTA = compileElmDef (Proxy :: Proxy NTA)
            rNTB = compileElmDef (Proxy :: Proxy NTB)
+           rNTC = compileElmDef (Proxy :: Proxy NTC)
+           rNTD = compileElmDef (Proxy :: Proxy NTD)
        it "should produce the correct ser code" $ do
              jsonSerForDef rFoo `shouldBe` fooSer
              jsonSerForDef rBar `shouldBe` barSer
@@ -287,5 +290,5 @@ spec =
             jsonParserForDef rNTA `shouldBe` ntaParse
             jsonParserForDef rNTB `shouldBe` ntbParse
        it "should produce the correct parse code for newtypes with unwrapUnaryRecords=False" $ do
-            jsonParserForDef rNTA `shouldBe` ntaParse
-            jsonParserForDef rNTB `shouldBe` ntbParse
+            jsonParserForDef rNTC `shouldBe` ntcParse
+            jsonParserForDef rNTD `shouldBe` ntdParse

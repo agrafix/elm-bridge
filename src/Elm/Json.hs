@@ -124,7 +124,8 @@ jsonParserForDef etd =
             encodingDictionary [(oname, args)] = "    " ++ mkDecoder oname args
             encodingDictionary os = tab 4 "let " ++ dictName ++ " = Dict.fromList\n" ++ tab 12 "[ " ++ intercalate ("\n" ++ replicate 12 ' ' ++ ", ") (map dictEntry os) ++ "\n" ++ tab 12 "]"
             isObjectSet = case encodingType of
-                              TaggedObject _ _ -> "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " (map (show . fst) $ filter (isLeft . snd) opts) ++ "]")
+                              TaggedObject _ _
+                                | length opts > 1 -> "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " (map (show . fst) $ filter (isLeft . snd) opts) ++ "]")
                               _ -> ""
             dictEntry (oname, args) = "(" ++ show oname ++ ", " ++ mkDecoder oname args ++ ")"
             mkDecoder oname (Left args)  =  lazy $ "Json.Decode.map "
