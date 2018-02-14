@@ -59,7 +59,7 @@ testElm = ETypeAlias $ EAlias
         ]
     , ea_omit_null = False
     , ea_newtype = False
-    , ea_unwrap_unary = False
+    , ea_unwrap_unary = True
     }
 
 fooElm :: ETypeDef
@@ -75,7 +75,7 @@ fooElm =
         [("f_name",ETyCon (ETCon {tc_name = "String"})),("f_blablub",ETyCon (ETCon {tc_name = "Int"}))]
     , ea_omit_null = False
     , ea_newtype = False
-    , ea_unwrap_unary = False
+    , ea_unwrap_unary = True
     }
 
 barElm :: ETypeDef
@@ -95,7 +95,7 @@ barElm =
         ]
     , ea_omit_null = False
     , ea_newtype = False
-    , ea_unwrap_unary = False
+    , ea_unwrap_unary = True
     }
 
 bazElm :: ETypeDef

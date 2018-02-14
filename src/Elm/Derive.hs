@@ -47,7 +47,7 @@ defaultOptions
   , A.constructorTagModifier  = id
   , A.allNullaryToStringTag   = True
   , A.omitNothingFields       = False
-  , A.unwrapUnaryRecords      = False
+  , A.unwrapUnaryRecords      = True
   }
 
 unwrapUnaryRecords :: A.Options -> Bool
