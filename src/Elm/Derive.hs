@@ -189,16 +189,17 @@ deriveElmDef opts name =
 #else
          DataD _ _ tyVars constrs _ ->
 #endif
-
              case constrs of
                [] -> fail "Can not derive empty data decls"
                [RecC _ conFields] -> deriveAlias False opts name tyVars conFields
                _ -> deriveSum opts name tyVars constrs
 #if __GLASGOW_HASKELL__ >= 800
          NewtypeD [] _ [] Nothing (NormalC _ [(Bang NoSourceUnpackedness NoSourceStrictness, otherTy)]) [] ->
-             deriveSynonym opts name [] otherTy
-         NewtypeD [] _ [] Nothing (RecC _ [(_, Bang NoSourceUnpackedness NoSourceStrictness, otherTy)]) [] ->
-             deriveSynonym opts name [] otherTy
+            deriveSynonym opts name [] otherTy
+         NewtypeD [] _ [] Nothing (RecC _ conFields@[(Name (OccName _) _, Bang NoSourceUnpackedness NoSourceStrictness, otherTy)]) [] ->
+          if A.unwrapUnaryRecords opts
+            then deriveSynonym opts name [] otherTy
+            else deriveAlias True opts name [] conFields
 #else
          NewtypeD _ _ tyVars (RecC _ conFields) _ ->
              deriveAlias True opts name tyVars conFields

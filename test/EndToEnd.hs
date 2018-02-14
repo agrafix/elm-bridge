@@ -46,7 +46,7 @@ data SumUntagged a = SMInt Int | SMList a
 newtype NTA = NTA [Int] deriving Show
 newtype NTB = NTB { _ntb :: [Int] } deriving Show
 newtype NTC = NTC [Int] deriving Show
-newtype NTD = NTD { _ntc :: [Int] } deriving Show
+newtype NTD = NTD { _ntd :: [Int] } deriving Show
 
 extractNTA :: NTA -> [Int]
 extractNTA (NTA x) =x
@@ -446,11 +446,11 @@ main = do
                        , mkSumDecodeTest "Untagged" sm
                        , mkDecodeTestNT "NT" "_" "A" extractNTA nta
                        , mkDecodeTestNT "NT" "_" "B" extractNTB ntb
-                       , mkDecodeTestNT "NT" "_" "C" extractNTC ntc
-                       , mkDecodeTestNT "NT" "_" "D" extractNTD ntd
                        , mkEncodeTestNT "NT" "_" "A" extractNTA nta
                        , mkEncodeTestNT "NT" "_" "B" extractNTB ntb
-                       , mkEncodeTestNT "NT" "_" "C" extractNTC ntc
-                       , mkEncodeTestNT "NT" "_" "D" extractNTD ntd
+                       , mkDecodeTest "NT" "_" "C" ntc
+                       , mkDecodeTest "NT" "_" "D" ntd
+                       , mkEncodeTest "NT" "_" "C" ntc
+                       , mkEncodeTest "NT" "_" "D" ntd
                        ]
 
