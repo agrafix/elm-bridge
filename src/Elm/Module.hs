@@ -32,7 +32,14 @@ makeElmModuleWithVersion :: ElmVersion
                          -> String  -- ^ Module name
                          -> [DefineElm]  -- ^ List of definitions to be included in the module
                          -> String
-makeElmModuleWithVersion elmVersion moduleName defs = unlines (
+makeElmModuleWithVersion elmVersion moduleName defs =  makeElmModuleWithVersionAndImports elmVersion moduleName [] defs
+
+makeElmModuleWithVersionAndImports :: ElmVersion
+                         -> String  -- ^ Module name
+                         -> [String] -- ^ Module names to import
+                         -> [DefineElm]  -- ^ List of definitions to be included in the module
+                         -> String
+makeElmModuleWithVersionAndImports elmVersion moduleName importList defs = unlines (
     [ moduleHeader elmVersion moduleName
     , ""
     , "import Json.Decode"
@@ -41,9 +48,9 @@ makeElmModuleWithVersion elmVersion moduleName defs = unlines (
     , "import Json.Helpers exposing (..)"
     , "import Dict"
     , "import Set"
-    , ""
-    , ""
-    ]) ++ makeModuleContent defs
+    ] ++ map ("import "++) importList
+      ++ ["",""])
+      ++ makeModuleContent defs
 
 -- | Creates an Elm module. This will use the default type conversion rules (to
 -- convert @Vector@ to @List@, @HashMap a b@ to @List (a,b)@, etc.).
