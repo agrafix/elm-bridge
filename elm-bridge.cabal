@@ -1,10 +1,9 @@
 name:                elm-bridge
 version:             0.4.2
-synopsis:            Derive Elm types and Json code from Haskell types
+synopsis:            Derive Elm types and Json code from Haskell types, using aeson's options
 description:         Building the bridge from Haskell to Elm and back. Define types once,
-                     use on both sides and enjoy easy (de)serialisation. Cheers!
-
-                     This module only supports Elm 0.18. Version 0.3.* supports both Elm 0.16 and Elm 0.17.
+                     and derive the aeson and elm functions at the same time, using any aeson
+                     option you like. Cheers!
 homepage:            https://github.com/agrafix/elm-bridge
 license:             BSD3
 license-file:        LICENSE
