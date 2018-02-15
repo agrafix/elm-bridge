@@ -1,5 +1,5 @@
 name:                elm-bridge
-version:             0.4.2
+version:             0.4.3
 synopsis:            Derive Elm types and Json code from Haskell types, using aeson's options
 description:         Building the bridge from Haskell to Elm and back. Define types once,
                      and derive the aeson and elm functions at the same time, using any aeson
@@ -13,7 +13,7 @@ copyright:           (c) 2015 - 2016 Alexander Thiemann and contributors
 category:            Web, Compiler, Language
 build-type:          Simple
 cabal-version:       >=1.10
-tested-with: GHC==8.4.1, GHC==8.2.2, GHC==8.0.2, GHC==7.10.3
+tested-with: GHC==8.4.1, GHC==8.2.2, GHC==8.0.2
 
 extra-source-files:
     README.md
@@ -32,7 +32,7 @@ library
                        Elm.TyRep
                        Elm.Versions
   other-modules:       Elm.Utils
-  build-depends:       base >= 4.7 && < 5,
+  build-depends:       base >= 4.9 && < 5,
                        template-haskell,
                        aeson  >= 1
   default-language:    Haskell2010

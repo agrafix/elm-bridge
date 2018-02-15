@@ -184,26 +184,17 @@ deriveElmDef :: A.Options -> Name -> Q [Dec]
 deriveElmDef opts name =
     do TyConI tyCon <- reify name
        case tyCon of
-#if __GLASGOW_HASKELL__ >= 800
          DataD _ _ tyVars _ constrs _ ->
-#else
-         DataD _ _ tyVars constrs _ ->
-#endif
              case constrs of
                [] -> fail "Can not derive empty data decls"
                [RecC _ conFields] -> deriveAlias False opts name tyVars conFields
                _ -> deriveSum opts name tyVars constrs
-#if __GLASGOW_HASKELL__ >= 800
          NewtypeD [] _ [] Nothing (NormalC _ [(Bang NoSourceUnpackedness NoSourceStrictness, otherTy)]) [] ->
             deriveSynonym opts name [] otherTy
          NewtypeD [] _ [] Nothing (RecC _ conFields@[(Name (OccName _) _, Bang NoSourceUnpackedness NoSourceStrictness, otherTy)]) [] ->
           if A.unwrapUnaryRecords opts
             then deriveSynonym opts name [] otherTy
             else deriveAlias True opts name [] conFields
-#else
-         NewtypeD _ _ tyVars (RecC _ conFields) _ ->
-             deriveAlias True opts name tyVars conFields
-#endif
          TySynD _ vars otherTy ->
              deriveSynonym opts name vars otherTy
          _ -> fail ("Oops, can only derive data and newtype, not this: " ++ show tyCon)
