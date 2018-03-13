@@ -101,6 +101,7 @@ newtypeAliases _ x = x
  * @Text@ -> @String@
  * @Vector@ -> @List@
  * @Double@ -> @Float@
+ * @Tagged t v@ -> @v@
 -}
 defaultAlterations :: ETypeDef -> ETypeDef
 defaultAlterations = recAlterType $ \t -> case t of
@@ -109,6 +110,7 @@ defaultAlterations = recAlterType $ \t -> case t of
                                   ETyApp (ETyApp (ETyCon (ETCon "HashMap")) k) v  -> checkMap k v
                                   ETyApp (ETyApp (ETyCon (ETCon "THashMap")) k) v -> checkMap k v
                                   ETyApp (ETyApp (ETyCon (ETCon "Map")) k) v      -> checkMap k v
+                                  ETyApp (ETyApp (ETyCon (ETCon "Tagged")) _) v   -> v
                                   ETyCon (ETCon "Integer")                        -> ETyCon (ETCon "Int")
                                   ETyCon (ETCon "Natural")                        -> ETyCon (ETCon "Int")
                                   ETyCon (ETCon "Text")                           -> ETyCon (ETCon "String")
