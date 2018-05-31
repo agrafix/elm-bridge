@@ -9,6 +9,8 @@ The reason is that Elm types might have an equivalent on the Haskell side and sh
 module Elm.Json
     ( jsonParserForDef
     , jsonSerForDef
+    , jsonParserForType
+    , jsonSerForType
     )
 where
 
@@ -22,6 +24,7 @@ import Elm.Utils
 data MaybeHandling = Root | Leaf
                    deriving Eq
 
+-- | Compile a JSON parser for an Elm type
 jsonParserForType :: EType -> String
 jsonParserForType = jsonParserForType' Leaf
 
@@ -29,7 +32,6 @@ isOption :: EType -> Bool
 isOption (ETyApp (ETyCon (ETCon "Maybe")) _) = True
 isOption _ = False
 
--- | Compile a JSON parser for an Elm type
 jsonParserForType' :: MaybeHandling -> EType -> String
 jsonParserForType' mh ty =
     case ty of

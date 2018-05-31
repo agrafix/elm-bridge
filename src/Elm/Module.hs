@@ -104,19 +104,23 @@ newtypeAliases _ x = x
  * @Tagged t v@ -> @v@
 -}
 defaultAlterations :: ETypeDef -> ETypeDef
-defaultAlterations = recAlterType $ \t -> case t of
-                                  ETyApp (ETyCon (ETCon "HashSet")) s             -> checkSet s
-                                  ETyApp (ETyCon (ETCon "Set")) s                 -> checkSet s
-                                  ETyApp (ETyApp (ETyCon (ETCon "HashMap")) k) v  -> checkMap k v
-                                  ETyApp (ETyApp (ETyCon (ETCon "THashMap")) k) v -> checkMap k v
-                                  ETyApp (ETyApp (ETyCon (ETCon "Map")) k) v      -> checkMap k v
-                                  ETyApp (ETyApp (ETyCon (ETCon "Tagged")) _) v   -> v
-                                  ETyCon (ETCon "Integer")                        -> ETyCon (ETCon "Int")
-                                  ETyCon (ETCon "Natural")                        -> ETyCon (ETCon "Int")
-                                  ETyCon (ETCon "Text")                           -> ETyCon (ETCon "String")
-                                  ETyCon (ETCon "Vector")                         -> ETyCon (ETCon "List")
-                                  ETyCon (ETCon "Double")                         -> ETyCon (ETCon "Float")
-                                  _                                               -> t
+defaultAlterations = recAlterType defaultTypeAlterations
+
+defaultTypeAlterations :: EType -> EType
+defaultTypeAlterations t = case t of
+                            ETyApp (ETyCon (ETCon "HashSet")) s             -> checkSet $ defaultTypeAlterations s
+                            ETyApp (ETyCon (ETCon "Set")) s                 -> checkSet $ defaultTypeAlterations s
+                            ETyApp (ETyApp (ETyCon (ETCon "HashMap")) k) v  -> checkMap (defaultTypeAlterations k) (defaultTypeAlterations v)
+                            ETyApp (ETyApp (ETyCon (ETCon "THashMap")) k) v -> checkMap (defaultTypeAlterations k) (defaultTypeAlterations v)
+                            ETyApp (ETyApp (ETyCon (ETCon "Map")) k) v      -> checkMap (defaultTypeAlterations k) (defaultTypeAlterations v)
+                            ETyApp (ETyApp (ETyCon (ETCon "Tagged")) _) v   -> defaultTypeAlterations v
+                            ETyApp x y                                      -> ETyApp (defaultTypeAlterations x) (defaultTypeAlterations y)
+                            ETyCon (ETCon "Integer")                        -> ETyCon (ETCon "Int")
+                            ETyCon (ETCon "Natural")                        -> ETyCon (ETCon "Int")
+                            ETyCon (ETCon "Text")                           -> ETyCon (ETCon "String")
+                            ETyCon (ETCon "Vector")                         -> ETyCon (ETCon "List")
+                            ETyCon (ETCon "Double")                         -> ETyCon (ETCon "Float")
+                            _                                               -> t
     where
         isString (ETyCon (ETCon "String")) = True
         isString _ = False
