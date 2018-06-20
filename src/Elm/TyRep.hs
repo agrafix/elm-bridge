@@ -5,6 +5,7 @@ module Elm.TyRep where
 
 import Data.List
 import Data.Proxy
+import Data.Typeable (Typeable, TyCon, TypeRep, splitTyConApp, tyConName, typeRep, typeRepTyCon)
 
 import Data.Aeson.Types (SumEncoding(..))
 import Data.Monoid ((<>))
@@ -140,3 +141,41 @@ instance Ord SumEncoding' where
 defSumEncoding :: SumEncoding'
 defSumEncoding = SumEncoding' ObjectWithSingleField
 
+-- | Get an @elm-bridge@ type representation for a Haskell type.
+-- This can be used to render the type declaration via
+-- 'Elm.TyRender.ElmRenderable' or the the JSON serializer/parser names via
+-- 'Elm.Json.jsonSerForType' and 'Elm.Json.jsonParserForType'.
+toElmType :: (Typeable a) => Proxy a -> EType
+toElmType ty = toElmType' $ typeRep ty
+    where
+        toElmType' :: TypeRep -> EType
+        toElmType' rep
+            -- String (A list of Char)
+          | con == (typeRepTyCon $ typeRep (Proxy :: Proxy [])) &&
+            args == [typeRep (Proxy :: Proxy Char)]  = ETyCon (ETCon "String")
+            -- List is special because the constructor name is [] in Haskell and List in elm
+          | con == (typeRepTyCon $ typeRep (Proxy :: Proxy [])) = ETyApp (ETyCon $ ETCon $ "List") (toElmType' (head args))
+            -- The unit type '()' is a 0-ary tuple.
+          | isTuple $ tyConName con = ETyTuple $ length args
+          | otherwise = typeApplication con args
+            where
+                (con, args) = splitTyConApp rep
+
+        isTuple :: String -> Bool
+        isTuple ('(':xs) = isTuple' $ reverse xs
+          where
+            isTuple' :: String -> Bool
+            isTuple' (')':xs') = all (== ',') xs'
+            isTuple' _ = False
+        isTuple _ = False
+
+        typeApplication :: TyCon -> [TypeRep] -> EType
+        typeApplication con args = typeApplication' (reverse args)
+          where
+            typeApplication' [] = ETyCon (ETCon $ tyConName con)
+            typeApplication' [x] =
+              ETyApp
+                (ETyCon $ ETCon $ tyConName con)
+                (toElmType' x)
+            typeApplication' (x:xs) =
+              ETyApp (typeApplication' xs) (toElmType' x)
