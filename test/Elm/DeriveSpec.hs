@@ -107,9 +107,9 @@ bazElm :: ETypeDef
 bazElm = ETypeSum $ ESum
     { es_name = ETypeName {et_name = "Baz", et_args = [ETVar {tv_name = "a"}]}
     , es_options =
-        [ ("Baz1",Left [("foo",ETyCon (ETCon {tc_name = "Int"})), ("qux",ETyVar (ETVar {tv_name = "a"}))])
-        , ("Baz2",Left [("bar",ETyCon (ETCon {tc_name = "Int"})), ("str",ETyCon (ETCon {tc_name = "String"}))])
-        , ("Zob",Right [ETyVar (ETVar {tv_name = "a"})])
+        [ ("Baz1",Named [("foo",ETyCon (ETCon {tc_name = "Int"})), ("qux",ETyVar (ETVar {tv_name = "a"}))])
+        , ("Baz2",Named [("bar",ETyCon (ETCon {tc_name = "Int"})), ("str",ETyCon (ETCon {tc_name = "String"}))])
+        , ("Zob",Anonymous [ETyVar (ETVar {tv_name = "a"})])
         ]
     , es_type = SumEncoding' ObjectWithSingleField
     , es_omit_null = False
@@ -120,8 +120,8 @@ quxElm :: ETypeDef
 quxElm = ETypeSum $ ESum
     { es_name = ETypeName {et_name = "Qux", et_args = [ETVar {tv_name = "a"}]}
     , es_options =
-        [ ("Qux1",Left [("foo",ETyCon (ETCon {tc_name = "Int"})), ("qux",ETyVar (ETVar {tv_name = "a"}))])
-        , ("Qux2",Left [("bar",ETyCon (ETCon {tc_name = "Int"})), ("str",ETyCon (ETCon {tc_name = "String"}))])
+        [ ("Qux1",Named [("foo",ETyCon (ETCon {tc_name = "Int"})), ("qux",ETyVar (ETVar {tv_name = "a"}))])
+        , ("Qux2",Named [("bar",ETyCon (ETCon {tc_name = "Int"})), ("str",ETyCon (ETCon {tc_name = "String"}))])
         ]
     , es_type = SumEncoding' $ TaggedObject "key" "value"
     , es_omit_null = False
@@ -138,8 +138,8 @@ someOptsElm =
           , et_args = [ETVar {tv_name = "a"}]
           }
     , es_options =
-        [ ("Okay", Right [ETyCon (ETCon {tc_name = "Int"})])
-        , ("NotOkay", Right [ETyVar (ETVar {tv_name = "a"})])
+        [ ("Okay", Anonymous [ETyCon (ETCon {tc_name = "Int"})])
+        , ("NotOkay", Anonymous [ETyVar (ETVar {tv_name = "a"})])
         ]
     , es_type = defSumEncoding
     , es_omit_null = False
@@ -149,7 +149,7 @@ someOptsElm =
 simpleElm :: ETypeDef
 simpleElm = ETypeSum $
   ESum
-    { es_name = ETypeName {et_name = "Simple", et_args = []}, es_options = [("SimpleA",Right []),("SimpleB",Right [])]
+    { es_name = ETypeName {et_name = "Simple", et_args = []}, es_options = [("SimpleA",Anonymous []),("SimpleB",Anonymous [])]
     , es_type = SumEncoding' ObjectWithSingleField
     , es_omit_null = False
     , es_unary_strings = True

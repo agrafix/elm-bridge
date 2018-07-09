@@ -56,8 +56,8 @@ instance ElmRenderable ESum where
         ++ intercalate "\n    | " (map mkOpt (es_options s))
         ++ "\n"
         where
-          mkOpt (name, Left types) = cap name ++ " {" ++ intercalate ", " (map (\(fld, ty) -> fixReserved fld ++ ": " ++ renderElm ty) types) ++ "}"
-          mkOpt (name, Right types) =
+          mkOpt (name, Named types) = cap name ++ " {" ++ intercalate ", " (map (\(fld, ty) -> fixReserved fld ++ ": " ++ renderElm ty) types) ++ "}"
+          mkOpt (name, Anonymous types) =
               cap name ++ " " ++ unwords (map renderElm types)
 
 instance ElmRenderable EPrimAlias where

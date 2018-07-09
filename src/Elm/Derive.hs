@@ -156,12 +156,12 @@ deriveSum opts name vars constrs =
             NormalC name' args ->
                 let n = modifyName name'
                     tyArgs = listE $ map (\(_, ty) -> compileType ty) args
-                in [|(n, Right $tyArgs)|]
+                in [|(n, Anonymous $tyArgs)|]
             RecC name' args ->
                 let n = modifyName name'
                     tyArgs = listE $ map (\(nm, _, ty) -> let nm' = A.fieldLabelModifier opts $ nameBase nm
                                                           in  [|(nm', $(compileType ty))|]) args
-                in [|(n, Left $tyArgs)|]
+                in [|(n, Named $tyArgs)|]
             _ -> fail ("Can't derive this sum: " ++ show c)
 
 deriveSynonym :: A.Options -> Name -> [TyVarBndr] -> Type -> Q [Dec]

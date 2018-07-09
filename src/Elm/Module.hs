@@ -8,7 +8,7 @@ module Elm.Module where
 
 import Data.Proxy
 import Data.List
-import Control.Arrow (second, (+++))
+import Control.Arrow (second)
 
 import Elm.TyRep
 import Elm.TyRender
@@ -79,10 +79,14 @@ recAlterType :: (EType -> EType) -> ETypeDef -> ETypeDef
 recAlterType f td = case td of
                      ETypeAlias a -> ETypeAlias (a { ea_fields = map (second f') (ea_fields a) })
                      ETypePrimAlias (EPrimAlias n t) -> ETypePrimAlias (EPrimAlias n (f' t))
-                     ETypeSum s -> ETypeSum (s { es_options = map (second (map (second f') +++ map f')) (es_options s) })
+                     ETypeSum s -> ETypeSum (s { es_options = map (second alterTypes) (es_options s) })
     where
-        f' (ETyApp a b) = f (ETyApp (f' a) (f' b))
-        f' x = f x
+      alterTypes :: SumTypeFields -> SumTypeFields
+      alterTypes s = case s of
+                      Anonymous flds -> Anonymous (map f' flds)
+                      Named flds -> Named (map (second f') flds)
+      f' (ETyApp a b) = f (ETyApp (f' a) (f' b))
+      f' x = f x
 
 -- | Given a list of type names, will @newtype@ all the matching type
 -- definitions.

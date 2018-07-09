@@ -15,7 +15,6 @@ module Elm.Json
 where
 
 import Data.List
-import Data.Either (isLeft)
 import Data.Aeson.Types (SumEncoding(..))
 
 import Elm.TyRep
@@ -80,11 +79,11 @@ parseRecords newtyped unwrap fields = map (mkField doUnwrap) fields ++ ["   Json
                       ++ ") >>= \\p" ++ fldName ++ " ->"
 
 -- | Checks that all the arguments to the ESum are unary values
-allUnaries :: Bool -> [(String, Either [(String, EType)] [EType])] -> Maybe [String]
+allUnaries :: Bool -> [(String, SumTypeFields)] -> Maybe [String]
 allUnaries False = const Nothing
 allUnaries True  = mapM isUnary
     where
-        isUnary (x, Right args) = if null args then Just x else Nothing
+        isUnary (x, Anonymous args) = if null args then Just x else Nothing
         isUnary _ = Nothing
 
 -- | Compile a JSON parser for an Elm type definition
@@ -127,16 +126,16 @@ jsonParserForDef etd =
             encodingDictionary os = tab 4 "let " ++ dictName ++ " = Dict.fromList\n" ++ tab 12 "[ " ++ intercalate ("\n" ++ replicate 12 ' ' ++ ", ") (map dictEntry os) ++ "\n" ++ tab 12 "]"
             isObjectSet = case encodingType of
                               TaggedObject _ _
-                                | length opts > 1 -> "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " (map (show . fst) $ filter (isLeft . snd) opts) ++ "]")
+                                | length opts > 1 -> "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " (map (show . fst) $ filter (isNamed . snd) opts) ++ "]")
                               _ -> ""
             dictEntry (oname, args) = "(" ++ show oname ++ ", " ++ mkDecoder oname args ++ ")"
-            mkDecoder oname (Left args)  =  lazy $ "Json.Decode.map "
+            mkDecoder oname (Named args)  =  lazy $ "Json.Decode.map "
                                          ++ cap oname
                                          ++ " ("
                                          ++ unwords (parseRecords Nothing False args)
                                          ++ ")"
 
-            mkDecoder oname (Right args) = lazy $ unwords ( decodeFunction
+            mkDecoder oname (Anonymous args) = lazy $ unwords ( decodeFunction
                                                    : cap oname
                                                    : zipWith (\t' i -> "(" ++ jsonParserForIndexedType t' i ++ ")") args [0..]
                                                    )
@@ -217,7 +216,7 @@ jsonSerForDef etd =
                                    TwoElemArray -> "encodeSumTwoElementArray"
                                    TaggedObject k c -> unwords ["encodeSumTaggedObject", show k, show c]
                                    UntaggedValue -> "encodeSumUntagged"
-              defaultEncoding [(oname, Right args)] = unlines $
+              defaultEncoding [(oname, Anonymous args)] = unlines
                 [ makeType name
                 , fname name ++ " "
                     ++ unwords (map (\tv -> "localEncoder_" ++ tv_name tv) $ et_args name)
@@ -227,7 +226,7 @@ jsonSerForDef etd =
               defaultEncoding os = unlines (
                 ( makeName name False ++ " =")
                 : "    let keyval v = case v of"
-                :  (map (replicate 12 ' ' ++) (map mkcase os))
+                : map ((replicate 12 ' ' ++) . mkcase) os
                 ++ [ "    " ++ unwords ["in", encodeFunction, "keyval", "val"] ]
                 )
               unaryEncoding names = unlines (
@@ -235,9 +234,9 @@ jsonSerForDef etd =
                 , "    case val of"
                 ] ++ map (\n -> replicate 8 ' ' ++ cap n ++ " -> Json.Encode.string " ++ show n) names
                 )
-              mkcase :: (String, Either [(String, EType)] [EType]) -> String
-              mkcase (oname, Right args) = replicate 8 ' ' ++ cap oname ++ " " ++ argList args ++ " -> (" ++ show oname ++ ", encodeValue (" ++ mkEncodeList args ++ "))"
-              mkcase (oname, Left args) = replicate 8 ' ' ++ cap oname ++ " vs -> (" ++ show oname ++ ", " ++ mkEncodeObject args ++ ")"
+              mkcase :: (String, SumTypeFields) -> String
+              mkcase (oname, Anonymous args) = replicate 8 ' ' ++ cap oname ++ " " ++ argList args ++ " -> (" ++ show oname ++ ", encodeValue (" ++ mkEncodeList args ++ "))"
+              mkcase (oname, Named args) = replicate 8 ' ' ++ cap oname ++ " vs -> (" ++ show oname ++ ", " ++ mkEncodeObject args ++ ")"
               argList a = unwords $ map (\i -> "v" ++ show i ) [1 .. length a]
               numargs :: (a -> String) -> [a] -> String
               numargs f = intercalate ", " . zipWith (\n a -> f a ++ " v" ++ show n)  ([1..] :: [Int])

@@ -71,10 +71,21 @@ data EAlias
    , ea_unwrap_unary :: Bool
    } deriving (Show, Eq, Ord)
 
+data SumTypeFields
+    = Anonymous [EType]
+    | Named [(String, EType)]
+    deriving (Show, Eq, Ord)
+
+isNamed :: SumTypeFields -> Bool
+isNamed s =
+    case s of
+      Named _ -> True
+      _ -> False
+
 data ESum
    = ESum
    { es_name          :: ETypeName
-   , es_options       :: [(String, Either [(String, EType)] [EType])]
+   , es_options       :: [(String, SumTypeFields)]
    , es_type          :: SumEncoding'
    , es_omit_null     :: Bool
    , es_unary_strings :: Bool
