@@ -47,8 +47,8 @@ someOptsCode = "type SomeOpts a =\n    Okay Int\n    | NotOkay a\n"
 paaCode :: String
 paaCode = unlines
   [ "type Paa  ="
-  , "    A1 "
-  , "    | A2 "
+  , "    PA1 "
+  , "    | PA2 "
   ]
 
 spec :: Spec
