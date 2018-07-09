@@ -53,11 +53,11 @@ instance ElmRenderable EAlias where
 instance ElmRenderable ESum where
     renderElm s =
         "type " ++ renderElm (es_name s) ++ " =\n    "
-        ++ intercalate "\n    | " (map mkOpt (es_options s))
+        ++ intercalate "\n    | " (map mkOpt (es_constructors s))
         ++ "\n"
         where
-          mkOpt (name, Named types) = cap name ++ " {" ++ intercalate ", " (map (\(fld, ty) -> fixReserved fld ++ ": " ++ renderElm ty) types) ++ "}"
-          mkOpt (name, Anonymous types) =
+          mkOpt (STC name _ (Named types)) = cap name ++ " {" ++ intercalate ", " (map (\(fld, ty) -> fixReserved fld ++ ": " ++ renderElm ty) types) ++ "}"
+          mkOpt (STC name _ (Anonymous types)) =
               cap name ++ " " ++ unwords (map renderElm types)
 
 instance ElmRenderable EPrimAlias where

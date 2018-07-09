@@ -151,17 +151,17 @@ deriveSum opts name vars constrs =
       sumOpts = listE $ map mkOpt constrs
       mkOpt :: Con -> Q Exp
       mkOpt c =
-        let modifyName = A.constructorTagModifier opts . nameBase
+        let modifyName n = (nameBase n, A.constructorTagModifier opts (nameBase n))
         in case c of
             NormalC name' args ->
-                let n = modifyName name'
+                let (b, n) = modifyName name'
                     tyArgs = listE $ map (\(_, ty) -> compileType ty) args
-                in [|(n, Anonymous $tyArgs)|]
+                in [|STC b n (Anonymous $tyArgs)|]
             RecC name' args ->
-                let n = modifyName name'
+                let (b, n) = modifyName name'
                     tyArgs = listE $ map (\(nm, _, ty) -> let nm' = A.fieldLabelModifier opts $ nameBase nm
                                                           in  [|(nm', $(compileType ty))|]) args
-                in [|(n, Named $tyArgs)|]
+                in [|STC b n (Named $tyArgs)|]
             _ -> fail ("Can't derive this sum: " ++ show c)
 
 deriveSynonym :: A.Options -> Name -> [TyVarBndr] -> Type -> Q [Dec]
