@@ -26,9 +26,14 @@ data SomeOpts a
    = Okay Int
    | NotOkay a
 
+data Paa
+    = PA1
+    | PA2
+
 $(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
 $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef defaultOptions ''SomeOpts)
+$(deriveElmDef defaultOptions{allNullaryToStringTag = True, constructorTagModifier = drop 1} ''Paa)
 
 fooCode :: String
 fooCode = "type alias Foo  =\n   { name: String\n   , blablub: Int\n   }\n"
@@ -39,13 +44,22 @@ barCode = "type alias Bar a =\n   { name: a\n   , blablub: Int\n   , tuple: (Int
 someOptsCode :: String
 someOptsCode = "type SomeOpts a =\n    Okay Int\n    | NotOkay a\n"
 
+paaCode :: String
+paaCode = unlines
+  [ "type Paa  ="
+  , "    A1 "
+  , "    | A2 "
+  ]
+
 spec :: Spec
 spec =
     describe "deriveElmRep" $
     do let rFoo = compileElmDef (Proxy :: Proxy Foo)
            rBar = compileElmDef (Proxy :: Proxy (Bar a))
            rSomeOpts = compileElmDef (Proxy :: Proxy (SomeOpts a))
+           rPaa = compileElmDef (Proxy :: Proxy Paa)
        it "should produce the correct code" $
           do renderElm rFoo `shouldBe` fooCode
              renderElm rBar `shouldBe` barCode
              renderElm rSomeOpts `shouldBe` someOptsCode
+             renderElm rPaa `shouldBe` paaCode
