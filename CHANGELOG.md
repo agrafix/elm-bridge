@@ -1,3 +1,7 @@
+# v0.5.0
+
+ * Large change for sum types that used `constructorTagModifier`. The generated types are now unaffected! This is a breaking change for those who used this feature.
+
 # v0.4.2
 
 Drop support for `aeson < 1.`

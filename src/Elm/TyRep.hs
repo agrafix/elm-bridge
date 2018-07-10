@@ -71,14 +71,32 @@ data EAlias
    , ea_unwrap_unary :: Bool
    } deriving (Show, Eq, Ord)
 
+data SumTypeFields
+    = Anonymous [EType]
+    | Named [(String, EType)]
+    deriving (Show, Eq, Ord)
+
+isNamed :: SumTypeFields -> Bool
+isNamed s =
+    case s of
+      Named _ -> True
+      _ -> False
+
+data SumTypeConstructor
+    = STC
+    { _stcName    :: String
+    , _stcEncoded :: String
+    , _stcFields  :: SumTypeFields
+    } deriving (Show, Eq, Ord)
+    
 data ESum
-   = ESum
-   { es_name          :: ETypeName
-   , es_options       :: [(String, Either [(String, EType)] [EType])]
-   , es_type          :: SumEncoding'
-   , es_omit_null     :: Bool
-   , es_unary_strings :: Bool
-   } deriving (Show, Eq, Ord)
+    = ESum
+    { es_name          :: ETypeName
+    , es_constructors  :: [SumTypeConstructor]
+    , es_type          :: SumEncoding'
+    , es_omit_null     :: Bool
+    , es_unary_strings :: Bool
+    } deriving (Show, Eq, Ord)
 
 -- | Transforms tuple types in a list of types. Otherwise returns
 -- a singleton list with the original type.

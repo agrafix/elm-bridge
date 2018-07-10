@@ -39,12 +39,17 @@ data SomeOpts a
    = Okay Int
    | NotOkay a
 
+data Simple
+    = SimpleA
+    | SimpleB
+
 deriveElmDef defaultOptions ''Foo
 deriveElmDef defaultOptions ''Bar
 deriveElmDef defaultOptions ''SomeOpts
 deriveElmDef defaultOptions { fieldLabelModifier = drop 1 . map toLower } ''Baz
 deriveElmDef defaultOptions { fieldLabelModifier = drop 1 . map toLower } ''Test
 deriveElmDef defaultOptions { fieldLabelModifier = drop 4 . map toLower, sumEncoding = TaggedObject "key" "value" } ''Qux
+deriveElmDef defaultOptions { constructorTagModifier = drop 6 . map toLower} ''Simple
 
 testElm :: ETypeDef
 testElm = ETypeAlias $ EAlias
@@ -101,10 +106,10 @@ barElm =
 bazElm :: ETypeDef
 bazElm = ETypeSum $ ESum
     { es_name = ETypeName {et_name = "Baz", et_args = [ETVar {tv_name = "a"}]}
-    , es_options =
-        [ ("Baz1",Left [("foo",ETyCon (ETCon {tc_name = "Int"})), ("qux",ETyVar (ETVar {tv_name = "a"}))])
-        , ("Baz2",Left [("bar",ETyCon (ETCon {tc_name = "Int"})), ("str",ETyCon (ETCon {tc_name = "String"}))])
-        , ("Zob",Right [ETyVar (ETVar {tv_name = "a"})])
+    , es_constructors =
+        [ STC "Baz1" "Baz1" (Named [("foo",ETyCon (ETCon {tc_name = "Int"})), ("qux",ETyVar (ETVar {tv_name = "a"}))])
+        , STC "Baz2" "Baz2" (Named [("bar",ETyCon (ETCon {tc_name = "Int"})), ("str",ETyCon (ETCon {tc_name = "String"}))])
+        , STC "Zob" "Zob" (Anonymous [ETyVar (ETVar {tv_name = "a"})])
         ]
     , es_type = SumEncoding' ObjectWithSingleField
     , es_omit_null = False
@@ -114,9 +119,9 @@ bazElm = ETypeSum $ ESum
 quxElm :: ETypeDef
 quxElm = ETypeSum $ ESum
     { es_name = ETypeName {et_name = "Qux", et_args = [ETVar {tv_name = "a"}]}
-    , es_options =
-        [ ("Qux1",Left [("foo",ETyCon (ETCon {tc_name = "Int"})), ("qux",ETyVar (ETVar {tv_name = "a"}))])
-        , ("Qux2",Left [("bar",ETyCon (ETCon {tc_name = "Int"})), ("str",ETyCon (ETCon {tc_name = "String"}))])
+    , es_constructors =
+        [ STC "Qux1" "Qux1" (Named [("foo",ETyCon (ETCon {tc_name = "Int"})), ("qux",ETyVar (ETVar {tv_name = "a"}))])
+        , STC "Qux2" "Qux2" (Named [("bar",ETyCon (ETCon {tc_name = "Int"})), ("str",ETyCon (ETCon {tc_name = "String"}))])
         ]
     , es_type = SumEncoding' $ TaggedObject "key" "value"
     , es_omit_null = False
@@ -132,11 +137,20 @@ someOptsElm =
           { et_name = "SomeOpts"
           , et_args = [ETVar {tv_name = "a"}]
           }
-    , es_options =
-        [ ("Okay", Right [ETyCon (ETCon {tc_name = "Int"})])
-        , ("NotOkay", Right [ETyVar (ETVar {tv_name = "a"})])
+    , es_constructors =
+        [ STC "Okay" "Okay" (Anonymous [ETyCon (ETCon {tc_name = "Int"})])
+        , STC "NotOkay" "NotOkay" (Anonymous [ETyVar (ETVar {tv_name = "a"})])
         ]
     , es_type = defSumEncoding
+    , es_omit_null = False
+    , es_unary_strings = True
+    }
+
+simpleElm :: ETypeDef
+simpleElm = ETypeSum $
+  ESum
+    { es_name = ETypeName {et_name = "Simple", et_args = []}, es_constructors = [STC "SimpleA" "a" (Anonymous []),STC "SimpleB" "b" (Anonymous [])]
+    , es_type = SumEncoding' ObjectWithSingleField
     , es_omit_null = False
     , es_unary_strings = True
     }
@@ -151,3 +165,4 @@ spec =
        compileElmDef (Proxy :: Proxy (Baz a)) `shouldBe` bazElm
        compileElmDef (Proxy :: Proxy (Qux a)) `shouldBe` quxElm
        compileElmDef (Proxy :: Proxy (Test a)) `shouldBe` testElm
+       compileElmDef (Proxy :: Proxy Simple) `shouldBe` simpleElm
