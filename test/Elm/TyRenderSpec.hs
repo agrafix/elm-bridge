@@ -26,6 +26,11 @@ data SomeOpts a
    = Okay Int
    | NotOkay a
 
+data Unit
+   = Unit
+   { u_unit :: ()
+   }
+
 data Paa
     = PA1
     | PA2
@@ -33,6 +38,7 @@ data Paa
 $(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
 $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef defaultOptions ''SomeOpts)
+$(deriveElmDef defaultOptions ''Unit)
 $(deriveElmDef defaultOptions{allNullaryToStringTag = True, constructorTagModifier = drop 1} ''Paa)
 
 fooCode :: String
@@ -43,6 +49,9 @@ barCode = "type alias Bar a =\n   { name: a\n   , blablub: Int\n   , tuple: (Int
 
 someOptsCode :: String
 someOptsCode = "type SomeOpts a =\n    Okay Int\n    | NotOkay a\n"
+
+unitCode :: String
+unitCode = "type alias Unit  =\n   { u_unit: ()\n   }\n"
 
 paaCode :: String
 paaCode = unlines
@@ -57,9 +66,11 @@ spec =
     do let rFoo = compileElmDef (Proxy :: Proxy Foo)
            rBar = compileElmDef (Proxy :: Proxy (Bar a))
            rSomeOpts = compileElmDef (Proxy :: Proxy (SomeOpts a))
+           rUnit = compileElmDef (Proxy :: Proxy Unit)
            rPaa = compileElmDef (Proxy :: Proxy Paa)
        it "should produce the correct code" $
           do renderElm rFoo `shouldBe` fooCode
              renderElm rBar `shouldBe` barCode
              renderElm rSomeOpts `shouldBe` someOptsCode
+             renderElm rUnit `shouldBe` unitCode
              renderElm rPaa `shouldBe` paaCode
