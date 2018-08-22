@@ -53,6 +53,11 @@ newtype NTB = NTB { getNtb :: Int }
 newtype NTC = NTC Int
 newtype NTD = NTD { getNtd :: Int }
 
+newtype PhantomA a = PhantomA Int
+newtype PhantomB a = PhantomB { getPhantomB :: Int }
+newtype PhantomC a = PhantomC Int
+newtype PhantomD a = PhantomD { getPhantomD :: Int }
+
 $(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
 $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef (defaultOptionsDropLower 1) ''TestComp)
@@ -67,6 +72,10 @@ $(deriveElmDef defaultOptions ''NTA)
 $(deriveElmDef defaultOptions ''NTB)
 $(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''NTC)
 $(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''NTD)
+$(deriveElmDef defaultOptions ''PhantomA)
+$(deriveElmDef defaultOptions ''PhantomB)
+$(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''PhantomC)
+$(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''PhantomD)
 
 fooSer :: String
 fooSer = "jsonEncFoo : Foo -> Value\njsonEncFoo  val =\n   Json.Encode.object\n   [ (\"name\", Json.Encode.string val.name)\n   , (\"blablub\", Json.Encode.int val.blablub)\n   ]\n"
@@ -247,6 +256,32 @@ ntdParse = unlines
   , "   Json.Decode.succeed (NTD {getNtd = pgetNtd})"
   ]
 
+phantomAParse :: String
+phantomAParse = unlines
+  [ "jsonDecPhantomA : Json.Decode.Decoder a -> Json.Decode.Decoder ( PhantomA a )"
+  , "jsonDecPhantomA localDecoder_a ="
+  , "    Json.Decode.int"
+  ]
+phantomBParse :: String
+phantomBParse = unlines
+  [ "jsonDecPhantomB : Json.Decode.Decoder a -> Json.Decode.Decoder ( PhantomB a )"
+  , "jsonDecPhantomB localDecoder_a ="
+  , "    Json.Decode.int"
+  ]
+phantomCParse :: String
+phantomCParse = unlines
+  [ "jsonDecPhantomC : Json.Decode.Decoder a -> Json.Decode.Decoder ( PhantomC a )"
+  , "jsonDecPhantomC localDecoder_a ="
+  , "    Json.Decode.int"
+  ]
+phantomDParse :: String
+phantomDParse = unlines
+  [ "jsonDecPhantomD : Json.Decode.Decoder a -> Json.Decode.Decoder ( PhantomD a )"
+  , "jsonDecPhantomD localDecoder_a ="
+  , "   (\"getPhantomD\" := Json.Decode.int) >>= \\pgetPhantomD ->"
+  , "   Json.Decode.succeed (PhantomD {getPhantomD = pgetPhantomD})"
+  ]
+
 spec :: Spec
 spec =
     describe "json serialisation" $
@@ -264,6 +299,10 @@ spec =
            rNTB = compileElmDef (Proxy :: Proxy NTB)
            rNTC = compileElmDef (Proxy :: Proxy NTC)
            rNTD = compileElmDef (Proxy :: Proxy NTD)
+           rPhantomA = compileElmDef (Proxy :: Proxy (PhantomA a))
+           rPhantomB = compileElmDef (Proxy :: Proxy (PhantomB a))
+           rPhantomC = compileElmDef (Proxy :: Proxy (PhantomC a))
+           rPhantomD = compileElmDef (Proxy :: Proxy (PhantomD a))
        it "should produce the correct ser code" $ do
              jsonSerForDef rFoo `shouldBe` fooSer
              jsonSerForDef rBar `shouldBe` barSer
@@ -292,3 +331,8 @@ spec =
        it "should produce the correct parse code for newtypes with unwrapUnaryRecords=False" $ do
             jsonParserForDef rNTC `shouldBe` ntcParse
             jsonParserForDef rNTD `shouldBe` ntdParse
+       it "should produce the correct parse code for phantom newtypes" $ do
+            jsonParserForDef rPhantomA `shouldBe` phantomAParse
+            jsonParserForDef rPhantomB `shouldBe` phantomBParse
+            jsonParserForDef rPhantomC `shouldBe` phantomCParse
+            jsonParserForDef rPhantomD `shouldBe` phantomDParse

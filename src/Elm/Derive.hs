@@ -197,4 +197,10 @@ deriveElmDef opts name =
             else deriveAlias True opts name [] conFields
          TySynD _ vars otherTy ->
              deriveSynonym opts name vars otherTy
+         NewtypeD _ _ tyvars Nothing (NormalC _ [(Bang NoSourceUnpackedness NoSourceStrictness, otherTy)]) [] ->
+             deriveSynonym opts name tyvars otherTy
+         NewtypeD _ _ tyvars Nothing (RecC _ conFields@[(Name (OccName _) _, Bang NoSourceUnpackedness NoSourceStrictness, otherTy)]) [] ->
+          if A.unwrapUnaryRecords opts
+            then deriveSynonym opts name tyvars otherTy
+            else deriveAlias True opts name tyvars conFields
          _ -> fail ("Oops, can only derive data and newtype, not this: " ++ show tyCon)

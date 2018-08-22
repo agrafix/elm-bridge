@@ -35,11 +35,20 @@ data Paa
     = PA1
     | PA2
 
+newtype PhantomA a = PhantomA Int
+newtype PhantomB a = PhantomB { getPhantomB :: Int }
+newtype PhantomC a = PhantomC Int
+newtype PhantomD a = PhantomD { getPhantomD :: Int }
+
 $(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
 $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef defaultOptions ''SomeOpts)
 $(deriveElmDef defaultOptions ''Unit)
 $(deriveElmDef defaultOptions{allNullaryToStringTag = True, constructorTagModifier = drop 1} ''Paa)
+$(deriveElmDef defaultOptions ''PhantomA)
+$(deriveElmDef defaultOptions ''PhantomB)
+$(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''PhantomC)
+$(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''PhantomD)
 
 fooCode :: String
 fooCode = "type alias Foo  =\n   { name: String\n   , blablub: Int\n   }\n"
@@ -60,6 +69,15 @@ paaCode = unlines
   , "    | PA2 "
   ]
 
+phantomATy :: String
+phantomATy = "type alias PhantomA a = Int\n"
+phantomBTy :: String
+phantomBTy = "type alias PhantomB a = Int\n"
+phantomCTy :: String
+phantomCTy = "type alias PhantomC a = Int\n"
+phantomDTy :: String
+phantomDTy = "type PhantomD a = PhantomD\n   { getPhantomD: Int\n   }\n"
+
 spec :: Spec
 spec =
     describe "deriveElmRep" $
@@ -68,9 +86,17 @@ spec =
            rSomeOpts = compileElmDef (Proxy :: Proxy (SomeOpts a))
            rUnit = compileElmDef (Proxy :: Proxy Unit)
            rPaa = compileElmDef (Proxy :: Proxy Paa)
+           rPhA = compileElmDef (Proxy :: Proxy (PhantomA a))
+           rPhB = compileElmDef (Proxy :: Proxy (PhantomB a))
+           rPhC = compileElmDef (Proxy :: Proxy (PhantomC a))
+           rPhD = compileElmDef (Proxy :: Proxy (PhantomD a))
        it "should produce the correct code" $
           do renderElm rFoo `shouldBe` fooCode
              renderElm rBar `shouldBe` barCode
              renderElm rSomeOpts `shouldBe` someOptsCode
              renderElm rUnit `shouldBe` unitCode
              renderElm rPaa `shouldBe` paaCode
+             renderElm rPhA `shouldBe` phantomATy
+             renderElm rPhB `shouldBe` phantomBTy
+             renderElm rPhC `shouldBe` phantomCTy
+             renderElm rPhD `shouldBe` phantomDTy
