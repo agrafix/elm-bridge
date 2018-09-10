@@ -63,20 +63,22 @@ jsonParserForType' mh ty =
                     ++ unwords (zipWith (\i t' -> "(Json.Decode.index " ++ show (i :: Int) ++ " (" ++ jsonParserForType t' ++ "))") [0..] xs)
 
 parseRecords :: Maybe ETypeName -> Bool -> [(String, EType)] -> [String]
-parseRecords newtyped unwrap fields = map (mkField doUnwrap) fields ++ ["   Json.Decode.succeed " ++ mkNewtype ("{" ++ intercalate ", " (map (\(fldName, _) -> fixReserved fldName ++ " = p" ++ fldName) fields) ++ "}")]
+parseRecords newtyped unwrap fields =
+      case fields of
+        [(_, ftype)] | unwrap -> [ succeed ++ " |> custom (" ++ jsonParserForType' (o ftype) ftype ++ ")" ]
+        _ -> succeed : map mkField fields
     where
-        doUnwrap = length fields == 1 && unwrap
+        succeed = "   Json.Decode.succeed (\\" ++ unwords (map ( ('p':) . fst ) fields) ++ " -> " ++ mkNewtype ("{" ++ intercalate ", " (map (\(fldName, _) -> fixReserved fldName ++ " = p" ++ fldName) fields) ++ "}") ++ ")"
         mkNewtype x = case newtyped of
                           Nothing -> x
                           Just nm -> "(" ++ et_name nm ++ " " ++ x ++ ")"
-        mkField u (fldName, fldType) =
-           let (fldStart, fldEnd, mh) = if isOption fldType
-                                            then ("(Json.Decode.maybe ", ")", Root)
-                                            else ("", "", Leaf)
-           in   "   " ++ fldStart ++ "(" ++ (if u then "" else "\"" ++ fldName ++ "\" := ")
-                      ++ jsonParserForType' mh fldType
-                      ++ fldEnd
-                      ++ ") >>= \\p" ++ fldName ++ " ->"
+        o fldType = if isOption fldType
+                      then Root
+                      else Leaf
+        mkField (fldName, fldType) =
+           "   |> " ++ (if isOption fldType then "fnullable " else "required ")
+                    ++ show fldName
+                    ++ " (" ++ jsonParserForType' (o fldType) fldType ++ ")"
 
 -- | Checks that all the arguments to the ESum are unary values
 allUnaries :: Bool -> [SumTypeConstructor] -> Maybe [(String, String)]
@@ -170,7 +172,7 @@ jsonSerForType' omitnull ty =
       ETyCon (ETCon "String") -> "Json.Encode.string"
       ETyCon (ETCon "Bool") -> "Json.Encode.bool"
       ETyCon (ETCon c) -> "jsonEnc" ++ c
-      ETyApp (ETyCon (ETCon "List")) t' -> "(Json.Encode.list << List.map " ++ jsonSerForType t' ++ ")"
+      ETyApp (ETyCon (ETCon "List")) t' -> "(Json.Encode.list " ++ jsonSerForType t' ++ ")"
       ETyApp (ETyCon (ETCon "Maybe")) t' -> if omitnull
                                                 then jsonSerForType t'
                                                 else "(maybeEncode (" ++ jsonSerForType t' ++ "))"
@@ -190,7 +192,7 @@ jsonSerForType' omitnull ty =
                 let tupleArgsV = zip xs ([1..] :: [Int])
                     tupleArgs =
                         intercalate "," $ map (\(_, v) -> "v" ++ show v) tupleArgsV
-                in "(\\(" ++ tupleArgs ++ ") -> Json.Encode.list [" ++  intercalate "," (map (\(t', idx) -> "(" ++ jsonSerForType t' ++ ") v" ++ show idx) tupleArgsV) ++ "])"
+                in "(\\(" ++ tupleArgs ++ ") -> Json.Encode.list identity [" ++  intercalate "," (map (\(t', idx) -> "(" ++ jsonSerForType t' ++ ") v" ++ show idx) tupleArgsV) ++ "])"
 
 
 -- | Compile a JSON serializer for an Elm type definition
@@ -241,7 +243,7 @@ jsonSerForDef etd =
               numargs f = intercalate ", " . zipWith (\n a -> f a ++ " v" ++ show n)  ([1..] :: [Int])
               mkEncodeObject args = "encodeObject [" ++ intercalate ", " (map (\(n,t) -> "(" ++ show n ++ ", " ++ jsonSerForType t ++ " vs." ++ fixReserved n ++ ")") args) ++ "]"
               mkEncodeList [arg] = jsonSerForType arg ++ " v1"
-              mkEncodeList args =  "Json.Encode.list [" ++ numargs jsonSerForType args ++ "]"
+              mkEncodeList args =  "Json.Encode.list identity [" ++ numargs jsonSerForType args ++ "]"
     where
       fname name = "jsonEnc" ++ et_name name
       makeType name = fname name ++ " : " ++ intercalate " -> " (map (mkLocalEncoder . tv_name) (et_args name) ++ [unwords (et_name name : map tv_name (et_args name)) , "Value"])

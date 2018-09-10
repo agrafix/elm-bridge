@@ -110,7 +110,7 @@ mkEncodeTest pred prefix num elems = unlines (
     ++ ["  ]"]
     )
   where
-      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (\\_ -> equalHack " ++ encoded ++ "(Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ "(Json.Encode.list << List.map Json.Encode.int) (" ++ pretty ++ "))))"
+      mktest (n,e) = pfix ++ "test \"" ++ show n ++ "\" (\\_ -> equalHack " ++ encoded ++ "(Json.Encode.encode 0 (jsonEnc" ++ pred ++ num ++ "(Json.Encode.list Json.Encode.int) (" ++ pretty ++ "))))"
         where
             pretty = T.unpack $ T.replace (T.pack (prefix ++ num)) T.empty $ T.pack $ show e
             encoded = show (encode e)
@@ -231,9 +231,8 @@ instance Arbitrary NT4 where arbitrary = fmap NT4 arbitrary
 elmModuleContent :: String
 elmModuleContent = unlines
     [ "-- This module requires the following packages:"
-    , "-- * elm-community/elm-test"
-    , "-- * elm-community/html-test-runner"
     , "-- * bartavelle/json-helpers"
+    , "-- * NoRedInk/elm-json-decode-pipeline"
     , "module MyTests exposing (..)"
     , ""
     , "import Dict exposing (Dict)"
@@ -241,10 +240,23 @@ elmModuleContent = unlines
     , "import Json.Decode exposing (field, Value)"
     , "import Json.Encode"
     , "import Json.Helpers exposing (..)"
-    , "import Test exposing (..)"
-    , "import Expect exposing (..)"
     , "import String"
-    , "import Test.Runner.Html"
+    , ""
+    , "type Test"
+    , "  = Described String (List Test)"
+    , "  | Test String ( () -> Expectation)"
+    , ""
+    , "describe : String -> List Test -> Test"
+    , "describe = Described"
+    , ""
+    , "test : String -> (() -> Expectation) -> Test"
+    , "test = Test"
+    , ""
+    , "type Expectation"
+    , "  = Ex ( () -> Bool )"
+    , ""
+    , "equal : a -> a -> Expectation"
+    , "equal a b = Ex (\\ _ -> a == b )"
     , ""
     , "newtypeDecode : Test"
     , "newtypeDecode = describe \"Newtype decoding checks\""
@@ -338,8 +350,6 @@ elmModuleContent = unlines
     , "    let remix = Json.Decode.decodeString Json.Decode.value"
     , "    in equal (remix a) (remix b)"
     , ""
-    , "main : Test.Runner.Html.TestProgram"
-    , "main = concat [newtypeDecode, newtypeEncode, recordDecode, recordEncode, sumDecode, sumEncode, simpleDecode, simpleEncode ] |> Test.Runner.Html.run"
     , ""
     , makeModuleContentWithAlterations (newtypeAliases ["Record1", "Record2", "SimpleRecord01", "SimpleRecord02", "SimpleRecord03", "SimpleRecord04"] . defaultAlterations)
         [ DefineElm (Proxy :: Proxy (Record1 a))
@@ -460,6 +470,6 @@ main = do
                        , mkDecodeTestNT "NT" "_nt" "3" extractNT3 nt3
                        , mkEncodeTestNT "NT" "_nt" "3" extractNT3 nt3
                        , dropAll "(Json.Decode.list Json.Decode.int)" (mkDecodeTest "NT" "_nt" "4" nt4)
-                       , dropAll "(Json.Encode.list << List.map Json.Encode.int)" (mkEncodeTest "NT" "_nt" "4" nt4)
+                       , dropAll "(Json.Encode.list Json.Encode.int)" (mkEncodeTest "NT" "_nt" "4" nt4)
                        ]
 
