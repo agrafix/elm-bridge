@@ -53,7 +53,7 @@ moduleCode elmVersion = unlines
     , "jsonDecBar localDecoder_a ="
     , "   (Json.Decode.field \"name\" (localDecoder_a)) >>= \\pname ->"
     , "   (Json.Decode.field \"blablub\" (Json.Decode.int)) >>= \\pblablub ->"
-    , "   (Json.Decode.field \"tuple\" (Json.Decode.map2 (,) (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string)))) >>= \\ptuple ->"
+    , "   (Json.Decode.field \"tuple\" (Json.Decode.map2 pair (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string)))) >>= \\ptuple ->"
     , "   (Json.Decode.field \"list\" (Json.Decode.list (Json.Decode.bool))) >>= \\plist ->"
     , "   (Json.Decode.field \"list_map\" (Json.Decode.list (Json.Decode.dict (Json.Decode.bool)))) >>= \\plist_map ->"
     , "   Json.Decode.succeed {name = pname, blablub = pblablub, tuple = ptuple, list = plist, list_map = plist_map}"

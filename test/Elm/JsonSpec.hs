@@ -118,7 +118,7 @@ barParse = unlines
     , "jsonDecBar localDecoder_a ="
     , "   (\"name\" := localDecoder_a) >>= \\pname ->"
     , "   (\"blablub\" := Json.Decode.int) >>= \\pblablub ->"
-    , "   (\"tuple\" := Json.Decode.map2 (,) (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string))) >>= \\ptuple ->"
+    , "   (\"tuple\" := Json.Decode.map2 pair (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string))) >>= \\ptuple ->"
     , "   (\"list\" := Json.Decode.list (Json.Decode.bool)) >>= \\plist ->"
     , "   Json.Decode.succeed {name = pname, blablub = pblablub, tuple = ptuple, list = plist}"
     ]

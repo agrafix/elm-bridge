@@ -58,8 +58,7 @@ jsonParserForType' mh ty =
                   _ -> error $ "Do suitable json parser found for " ++ show ty
             xs ->
                 let tupleLen = length xs
-                    commas = replicate (tupleLen - 1) ','
-                in "Json.Decode.map" ++ show tupleLen ++ " (" ++ commas ++ ") "
+                in "Json.Decode.map" ++ show tupleLen ++ " tuple" ++ show tupleLen ++ " "
                     ++ unwords (zipWith (\i t' -> "(Json.Decode.index " ++ show (i :: Int) ++ " (" ++ jsonParserForType t' ++ "))") [0..] xs)
 
 parseRecords :: Maybe ETypeName -> Bool -> [(String, EType)] -> [String]
