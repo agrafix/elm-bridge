@@ -124,6 +124,7 @@ defaultTypeAlterations t = case t of
                             ETyCon (ETCon "Text")                           -> ETyCon (ETCon "String")
                             ETyCon (ETCon "Vector")                         -> ETyCon (ETCon "List")
                             ETyCon (ETCon "Double")                         -> ETyCon (ETCon "Float")
+                            ETyCon (ETCon "UTCTime")                        -> ETyCon (ETCon "Posix")
                             _                                               -> t
     where
         isString (ETyCon (ETCon "String")) = True
