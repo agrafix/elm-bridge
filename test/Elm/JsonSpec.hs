@@ -2,13 +2,14 @@
 module Elm.JsonSpec (spec) where
 
 import Elm.Derive
+import Elm.TyRender
 import Elm.TyRep
 import Elm.Json
 
 import Data.Proxy
 import Test.Hspec
 import Data.Char (toLower)
-import Data.Aeson.Types (SumEncoding(..),defaultTaggedObject)
+import Data.Aeson.Types (defaultTaggedObject)
 import qualified Data.Map.Strict as M
 import qualified Data.Aeson.TH as TH
 
@@ -84,9 +85,9 @@ fooParse :: String
 fooParse = unlines
     [ "jsonDecFoo : Json.Decode.Decoder ( Foo )"
     , "jsonDecFoo ="
-    , "   (\"name\" := Json.Decode.string) >>= \\pname ->"
-    , "   (\"blablub\" := Json.Decode.int) >>= \\pblablub ->"
-    , "   Json.Decode.succeed {name = pname, blablub = pblablub}"
+    , "   Json.Decode.succeed (\\pname pblablub -> {name = pname, blablub = pblablub})"
+    , "   |> required \"name\" (Json.Decode.string)"
+    , "   |> required \"blablub\" (Json.Decode.int)"
     ]
 
 barSer :: String
@@ -96,8 +97,8 @@ barSer = unlines
     , "   Json.Encode.object"
     , "   [ (\"name\", localEncoder_a val.name)"
     , "   , (\"blablub\", Json.Encode.int val.blablub)"
-    , "   , (\"tuple\", (\\(v1,v2) -> Json.Encode.list [(Json.Encode.int) v1,(Json.Encode.string) v2]) val.tuple)"
-    , "   , (\"list\", (Json.Encode.list << List.map Json.Encode.bool) val.list)"
+    , "   , (\"tuple\", (\\(v1,v2) -> Json.Encode.list identity [(Json.Encode.int) v1,(Json.Encode.string) v2]) val.tuple)"
+    , "   , (\"list\", (Json.Encode.list Json.Encode.bool) val.list)"
     , "   ]"
     ]
 
@@ -116,11 +117,11 @@ barParse :: String
 barParse = unlines
     [ "jsonDecBar : Json.Decode.Decoder a -> Json.Decode.Decoder ( Bar a )"
     , "jsonDecBar localDecoder_a ="
-    , "   (\"name\" := localDecoder_a) >>= \\pname ->"
-    , "   (\"blablub\" := Json.Decode.int) >>= \\pblablub ->"
-    , "   (\"tuple\" := Json.Decode.map2 pair (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string))) >>= \\ptuple ->"
-    , "   (\"list\" := Json.Decode.list (Json.Decode.bool)) >>= \\plist ->"
-    , "   Json.Decode.succeed {name = pname, blablub = pblablub, tuple = ptuple, list = plist}"
+    , "   Json.Decode.succeed (\\pname pblablub ptuple plist -> {name = pname, blablub = pblablub, tuple = ptuple, list = plist})"
+    , "   |> required \"name\" (localDecoder_a)"
+    , "   |> required \"blablub\" (Json.Decode.int)"
+    , "   |> required \"tuple\" (Json.Decode.map2 tuple2 (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string)))"
+    , "   |> required \"list\" (Json.Decode.list (Json.Decode.bool))"
     ]
 
 bazParse :: String
@@ -128,8 +129,8 @@ bazParse = unlines
     [ "jsonDecBaz : Json.Decode.Decoder a -> Json.Decode.Decoder ( Baz a )"
     , "jsonDecBaz localDecoder_a ="
     , "    let jsonDecDictBaz = Dict.fromList"
-    , "            [ (\"Baz1\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz1 (   (\"foo\" := Json.Decode.int) >>= \\pfoo ->    (\"qux\" := jsonDecMap (Json.Decode.int) (localDecoder_a)) >>= \\pqux ->    Json.Decode.succeed {foo = pfoo, qux = pqux})))"
-    , "            , (\"Baz2\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz2 (   (Json.Decode.maybe (\"bar\" := Json.Decode.int)) >>= \\pbar ->    (\"str\" := Json.Decode.string) >>= \\pstr ->    Json.Decode.succeed {bar = pbar, str = pstr})))"
+    , "            [ (\"Baz1\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz1 (   Json.Decode.succeed (\\pfoo pqux -> {foo = pfoo, qux = pqux})    |> required \"foo\" (Json.Decode.int)    |> required \"qux\" (jsonDecMap (Json.Decode.int) (localDecoder_a)))))"
+    , "            , (\"Baz2\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz2 (   Json.Decode.succeed (\\pbar pstr -> {bar = pbar, str = pstr})    |> fnullable \"bar\" (Json.Decode.int)    |> required \"str\" (Json.Decode.string))))"
     , "            , (\"Testing\", Json.Decode.lazy (\\_ -> Json.Decode.map Testing (jsonDecBaz (localDecoder_a))))"
     , "            ]"
     , "    in  decodeSumObjectWithSingleField  \"Baz\" jsonDecDictBaz"
@@ -160,9 +161,9 @@ test1Parse :: String
 test1Parse = unlines
     [ "jsonDecTestComp : Json.Decode.Decoder a -> Json.Decode.Decoder ( TestComp a )"
     , "jsonDecTestComp localDecoder_a ="
-    , "   (\"t1\" := jsonDecChange (Json.Decode.int)) >>= \\pt1 ->"
-    , "   (\"t2\" := jsonDecChange (localDecoder_a)) >>= \\pt2 ->"
-    , "   Json.Decode.succeed {t1 = pt1, t2 = pt2}"
+    , "   Json.Decode.succeed (\\pt1 pt2 -> {t1 = pt1, t2 = pt2})"
+    , "   |> required \"t1\" (jsonDecChange (Json.Decode.int))"
+    , "   |> required \"t2\" (jsonDecChange (localDecoder_a))"
     ]
 
 unaryAParse :: String
@@ -189,8 +190,8 @@ unaryASer = unlines
     [ "jsonEncUnaryA : UnaryA -> Value"
     , "jsonEncUnaryA  val ="
     , "    let keyval v = case v of"
-    , "                    UnaryA1  -> (\"UnaryA1\", encodeValue (Json.Encode.list []))"
-    , "                    UnaryA2  -> (\"UnaryA2\", encodeValue (Json.Encode.list []))"
+    , "                    UnaryA1  -> (\"UnaryA1\", encodeValue (Json.Encode.list identity []))"
+    , "                    UnaryA2  -> (\"UnaryA2\", encodeValue (Json.Encode.list identity []))"
     , "    in encodeSumObjectWithSingleField keyval val"
     ]
 
@@ -252,8 +253,8 @@ ntdParse :: String
 ntdParse = unlines
   [ "jsonDecNTD : Json.Decode.Decoder ( NTD )"
   , "jsonDecNTD ="
-  , "   (\"getNtd\" := Json.Decode.int) >>= \\pgetNtd ->"
-  , "   Json.Decode.succeed (NTD {getNtd = pgetNtd})"
+  , "   Json.Decode.succeed (\\pgetNtd -> (NTD {getNtd = pgetNtd}))"
+  , "   |> required \"getNtd\" (Json.Decode.int)"
   ]
 
 phantomAParse :: String
@@ -278,8 +279,8 @@ phantomDParse :: String
 phantomDParse = unlines
   [ "jsonDecPhantomD : Json.Decode.Decoder a -> Json.Decode.Decoder ( PhantomD a )"
   , "jsonDecPhantomD localDecoder_a ="
-  , "   (\"getPhantomD\" := Json.Decode.int) >>= \\pgetPhantomD ->"
-  , "   Json.Decode.succeed (PhantomD {getPhantomD = pgetPhantomD})"
+  , "   Json.Decode.succeed (\\pgetPhantomD -> (PhantomD {getPhantomD = pgetPhantomD}))"
+  , "   |> required \"getPhantomD\" (Json.Decode.int)"
   ]
 
 spec :: Spec
