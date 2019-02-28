@@ -62,7 +62,7 @@ moduleCode elmVersion = unlines
     , "   Json.Encode.object"
     , "   [ (\"name\", localEncoder_a val.name)"
     , "   , (\"blablub\", Json.Encode.int val.blablub)"
-    , "   , (\"tuple\", (\\(v1,v2) -> Json.Encode.list identity [(Json.Encode.int) v1,(Json.Encode.string) v2]) val.tuple)"
+    , "   , (\"tuple\", (\\(t1,t2) -> Json.Encode.list identity [(Json.Encode.int) t1,(Json.Encode.string) t2]) val.tuple)"
     , "   , (\"list\", (Json.Encode.list Json.Encode.bool) val.list)"
     , "   , (\"list_map\", (Json.Encode.list (encodeMap (Json.Encode.string) (Json.Encode.bool))) val.list_map)"
     , "   ]"
