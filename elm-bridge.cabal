@@ -59,6 +59,7 @@ test-suite derive-elm-tests
                        Elm.TyRenderSpec
                        Elm.JsonSpec
                        Elm.ModuleSpec
+                       Elm.TyRepSpec
   build-depends:
                        base,
                        hspec >= 2.0,
