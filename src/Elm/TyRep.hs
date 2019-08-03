@@ -175,7 +175,7 @@ toElmType ty = toElmType' $ typeRep ty
             -- List is special because the constructor name is [] in Haskell and List in elm
           | con == (typeRepTyCon $ typeRep (Proxy :: Proxy [])) = ETyApp (ETyCon $ ETCon $ "List") (toElmType' (head args))
             -- The unit type '()' is a 0-ary tuple.
-          | isTuple $ tyConName con = ETyTuple $ length args
+          | isTuple $ tyConName con = foldl ETyApp (ETyTuple $ length args) $ map toElmType' args
           | otherwise = typeApplication con args
             where
                 (con, args) = splitTyConApp rep
