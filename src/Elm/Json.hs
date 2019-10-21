@@ -14,11 +14,11 @@ module Elm.Json
     )
 where
 
-import Data.List
-import Data.Aeson.Types (SumEncoding(..))
-
-import Elm.TyRep
-import Elm.Utils
+import           Data.Aeson.Types (SumEncoding (..))
+import           Data.List
+import           Elm.TyRep
+import           Elm.Utils
+import           Elm.Versions
 
 data MaybeHandling = Root | Leaf
                    deriving Eq
@@ -29,7 +29,7 @@ jsonParserForType = jsonParserForType' Leaf
 
 isOption :: EType -> Bool
 isOption (ETyApp (ETyCon (ETCon "Maybe")) _) = True
-isOption _ = False
+isOption _                                   = False
 
 jsonParserForType' :: MaybeHandling -> EType -> String
 jsonParserForType' mh ty =
@@ -208,7 +208,7 @@ jsonSerForDef etd =
           ++ "\n   ]\n"
       ETypeSum (ESum name opts (SumEncoding' se) _ unarystring) ->
         case allUnaries unarystring opts of
-            Nothing -> defaultEncoding opts
+            Nothing   -> defaultEncoding opts
             Just strs -> unaryEncoding strs
           where
               encodeFunction = case se of

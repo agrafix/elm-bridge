@@ -1,9 +1,9 @@
 module Elm.Utils where
 
-import Data.Char (toUpper)
+import           Data.Char (toUpper)
 
 cap :: String -> String
-cap "" = ""
+cap ""     = ""
 cap (x:xs) = toUpper x : xs
 
 fixReserved :: String -> String

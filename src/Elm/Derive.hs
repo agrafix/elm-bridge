@@ -1,6 +1,6 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP             #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TupleSections   #-}
 {-| This module should be used to derive the Elm instance alongside the
  JSON ones. The prefered usage is to convert statements such as :
 
@@ -26,16 +26,16 @@ module Elm.Derive
     )
 where
 
-import Elm.TyRep
+import           Elm.TyRep
 
-import Control.Monad
-import Data.Aeson.TH (deriveJSON, SumEncoding(..))
-import qualified Data.Aeson.TH as A
-import Language.Haskell.TH
-import Language.Haskell.TH.Syntax
-import Data.Char (toLower)
-import Control.Applicative
-import Prelude
+import           Control.Applicative
+import           Control.Monad
+import           Data.Aeson.TH              (SumEncoding (..), deriveJSON)
+import qualified Data.Aeson.TH              as A
+import           Data.Char                  (toLower)
+import           Language.Haskell.TH
+import           Language.Haskell.TH.Syntax
+import           Prelude
 
 -- | Note that This default set of options is distinct from that in
 -- the @aeson@ package.
@@ -51,7 +51,7 @@ defaultOptions
   }
 
 unwrapUnaryRecords :: A.Options -> Bool
-unwrapUnaryRecords opts = A.unwrapUnaryRecords opts
+unwrapUnaryRecords = A.unwrapUnaryRecords
 
 {-| This generates a default set of options. The parameter represents the
 number of characters that must be dropped from the Haskell field names.
@@ -67,7 +67,7 @@ Will be encoded as:
 defaultOptionsDropLower :: Int -> A.Options
 defaultOptionsDropLower n = defaultOptions { A.fieldLabelModifier = lower . drop n }
     where
-        lower "" = ""
+        lower ""     = ""
         lower (x:xs) = toLower x : xs
 
 compileType :: Type -> Q Exp
@@ -89,10 +89,10 @@ compileType ty =
 optSumType :: SumEncoding -> Q Exp
 optSumType se =
     case se of
-        TwoElemArray -> [|SumEncoding' TwoElemArray|]
+        TwoElemArray          -> [|SumEncoding' TwoElemArray|]
         ObjectWithSingleField -> [|SumEncoding' ObjectWithSingleField|]
-        TaggedObject tn cn -> [|SumEncoding' (TaggedObject tn cn)|]
-        UntaggedValue -> [|SumEncoding' UntaggedValue|]
+        TaggedObject tn cn    -> [|SumEncoding' (TaggedObject tn cn)|]
+        UntaggedValue         -> [|SumEncoding' UntaggedValue|]
 
 runDerive :: Name -> [TyVarBndr] -> (Q Exp -> Q Exp) -> Q [Dec]
 runDerive name vars mkBody =
@@ -122,7 +122,7 @@ runDerive name vars mkBody =
       argNames =
           flip map vars $ \v ->
               case v of
-                PlainTV tv -> tv
+                PlainTV tv    -> tv
                 KindedTV tv _ -> tv
 
 deriveAlias :: Bool -> A.Options -> Name -> [TyVarBndr] -> [VarStrictType] -> Q [Dec]

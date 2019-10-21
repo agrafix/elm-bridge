@@ -3,13 +3,14 @@
 -}
 module Elm.TyRep where
 
-import Data.List
-import Data.Proxy
-import Data.Typeable (Typeable, TyCon, TypeRep, splitTyConApp, tyConName, typeRep, typeRepTyCon)
+import           Data.List
+import           Data.Proxy
+import           Data.Typeable    (TyCon, TypeRep, Typeable, splitTyConApp,
+                                   tyConName, typeRep, typeRepTyCon)
 
-import Data.Aeson.Types (SumEncoding(..))
-import Data.Monoid ((<>))
-import Data.Maybe (fromMaybe)
+import           Data.Aeson.Types (SumEncoding (..))
+import           Data.Maybe       (fromMaybe)
+import           Data.Monoid      ((<>))
 
 -- | Type definition, including constructors.
 data ETypeDef
@@ -31,7 +32,7 @@ data EType
 
 > ETCon "Int"
 -}
-data ETCon
+newtype ETCon
    = ETCon
    { tc_name :: String
    } deriving (Show, Eq, Ord)
@@ -40,7 +41,7 @@ data ETCon
 
 > ETVar "a"
 -}
-data ETVar
+newtype ETVar
    = ETVar
    { tv_name :: String
    } deriving (Show, Eq, Ord)
@@ -64,10 +65,10 @@ data EPrimAlias
 
 data EAlias
    = EAlias
-   { ea_name :: ETypeName
-   , ea_fields :: [(String, EType)]
-   , ea_omit_null :: Bool
-   , ea_newtype   :: Bool
+   { ea_name         :: ETypeName
+   , ea_fields       :: [(String, EType)]
+   , ea_omit_null    :: Bool
+   , ea_newtype      :: Bool
    , ea_unwrap_unary :: Bool
    } deriving (Show, Eq, Ord)
 
@@ -80,7 +81,7 @@ isNamed :: SumTypeFields -> Bool
 isNamed s =
     case s of
       Named _ -> True
-      _ -> False
+      _       -> False
 
 data SumTypeConstructor
     = STC
@@ -88,7 +89,7 @@ data SumTypeConstructor
     , _stcEncoded :: String
     , _stcFields  :: SumTypeFields
     } deriving (Show, Eq, Ord)
-    
+
 data ESum
     = ESum
     { es_name          :: ETypeName
@@ -170,10 +171,10 @@ toElmType ty = toElmType' $ typeRep ty
         toElmType' :: TypeRep -> EType
         toElmType' rep
             -- String (A list of Char)
-          | con == (typeRepTyCon $ typeRep (Proxy :: Proxy [])) &&
+          | con == typeRepTyCon (typeRep (Proxy :: Proxy [])) &&
             args == [typeRep (Proxy :: Proxy Char)]  = ETyCon (ETCon "String")
             -- List is special because the constructor name is [] in Haskell and List in elm
-          | con == (typeRepTyCon $ typeRep (Proxy :: Proxy [])) = ETyApp (ETyCon $ ETCon $ "List") (toElmType' (head args))
+          | con == typeRepTyCon (typeRep (Proxy :: Proxy [])) = ETyApp (ETyCon $ ETCon "List") (toElmType' (head args))
             -- The unit type '()' is a 0-ary tuple.
           | isTuple $ tyConName con = foldl ETyApp (ETyTuple $ length args) $ map toElmType' args
           | otherwise = typeApplication con args
@@ -185,7 +186,7 @@ toElmType ty = toElmType' $ typeRep ty
           where
             isTuple' :: String -> Bool
             isTuple' (')':xs') = all (== ',') xs'
-            isTuple' _ = False
+            isTuple' _         = False
         isTuple _ = False
 
         typeApplication :: TyCon -> [TypeRep] -> EType

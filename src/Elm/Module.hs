@@ -1,19 +1,19 @@
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
 {-|
 Functions in this module are used to generate Elm modules. Note that the generated modules depend on the @bartavelle/json-helpers@ package.
 
 -}
 module Elm.Module where
 
-import Data.Proxy
-import Data.List
-import Control.Arrow (second)
+import           Control.Arrow (second)
+import           Data.List
+import           Data.Proxy
 
-import Elm.TyRep
-import Elm.TyRender
-import Elm.Json
-import Elm.Versions
+import           Elm.Json
+import           Elm.TyRender
+import           Elm.TyRep
+import           Elm.Versions
 
 -- | Existential quantification wrapper for lists of type definitions
 data DefineElm
@@ -32,7 +32,7 @@ makeElmModuleWithVersion :: ElmVersion
                          -> String  -- ^ Module name
                          -> [DefineElm]  -- ^ List of definitions to be included in the module
                          -> String
-makeElmModuleWithVersion elmVersion moduleName defs = unlines (
+makeElmModuleWithVersion elmVersion moduleName defs = unlines
     [ moduleHeader elmVersion moduleName
     , ""
     , "import Json.Decode"
@@ -84,9 +84,9 @@ recAlterType f td = case td of
       alterTypes :: SumTypeConstructor -> SumTypeConstructor
       alterTypes (STC cn dn s) = STC cn dn $ case s of
                       Anonymous flds -> Anonymous (map f' flds)
-                      Named flds -> Named (map (second f') flds)
+                      Named flds     -> Named (map (second f') flds)
       f' (ETyApp a b) = f (ETyApp (f' a) (f' b))
-      f' x = f x
+      f' x            = f x
 
 -- | Given a list of type names, will @newtype@ all the matching type
 -- definitions.
@@ -128,12 +128,11 @@ defaultTypeAlterations t = case t of
                             _                                               -> t
     where
         isString (ETyCon (ETCon "String")) = True
-        isString _ = False
+        isString _                         = False
         isComparable (ETyCon (ETCon n)) = n `elem` ["String", "Int"]
-        isComparable _ = False -- TODO check what Elm actually uses
+        isComparable _                  = False -- TODO check what Elm actually uses
         tc = ETyCon . ETCon
         checkMap k v | isString k = ETyApp (ETyApp (tc "Dict") k) v
                      | otherwise  = ETyApp (tc "List") (ETyApp (ETyApp (ETyTuple 2) k) v)
         checkSet s | isComparable s = ETyApp (ETyCon (ETCon "Set")) s
                    | otherwise = ETyApp (ETyCon (ETCon "List")) s
-

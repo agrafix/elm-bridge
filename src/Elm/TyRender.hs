@@ -1,10 +1,10 @@
 {-| This module should not usually be imported. -}
 module Elm.TyRender where
 
-import Elm.TyRep
-import Elm.Utils
+import           Elm.TyRep
+import           Elm.Utils
 
-import Data.List
+import           Data.List
 
 class ElmRenderable a where
     renderElm :: a -> String
@@ -12,22 +12,22 @@ class ElmRenderable a where
 instance ElmRenderable ETypeDef where
     renderElm td =
         case td of
-          ETypeAlias alias -> renderElm alias
-          ETypeSum s -> renderElm s
+          ETypeAlias alias  -> renderElm alias
+          ETypeSum s        -> renderElm s
           ETypePrimAlias pa -> renderElm pa
 
 instance ElmRenderable EType where
     renderElm ty =
         case unpackTupleType ty of
           [t] -> renderSingleTy t
-          xs -> "(" ++ intercalate ", " (map renderSingleTy xs) ++ ")"
+          xs  -> "(" ++ intercalate ", " (map renderSingleTy xs) ++ ")"
         where
           renderApp (ETyApp l r) = renderApp l ++ " " ++ renderElm r
-          renderApp x = renderElm x
+          renderApp x            = renderElm x
           renderSingleTy typ =
               case typ of
-                ETyVar v -> renderElm v
-                ETyCon c -> renderElm c
+                ETyVar v   -> renderElm v
+                ETyCon c   -> renderElm c
                 ETyTuple _ -> error "Library Bug: This should never happen!"
                 ETyApp l r -> "(" ++ renderApp l ++ " " ++ renderElm r ++ ")"
 
