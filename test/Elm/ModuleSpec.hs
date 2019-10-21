@@ -105,7 +105,7 @@ moduleCode' elmVersion = unlines
 spec :: Spec
 spec = do
   makeElmModuleSpec
-  version0p18Spec
+  version0p19Spec
 
 makeElmModuleSpec :: Spec
 makeElmModuleSpec =
@@ -116,8 +116,8 @@ makeElmModuleSpec =
           modu `shouldBe` moduleCode Elm0p19
           modu' `shouldBe` moduleCode' Elm0p19
 
-version0p18Spec :: Spec
-version0p18Spec =
+version0p19Spec :: Spec
+version0p19Spec =
   describe "makeElmModuleWithVersion Elm0p19" $
     it "should produce the correct code" $
        do let modu = makeElmModuleWithVersion Elm0p19 "Foo" [DefineElm (Proxy :: Proxy (Bar a))]

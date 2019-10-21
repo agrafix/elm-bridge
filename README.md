@@ -11,7 +11,7 @@ Hackage: [elm-bridge](http://hackage.haskell.org/package/elm-bridge)
 
 Building the bridge from [Haskell](http://haskell.org) to [Elm](http://elm-lang.org) and back. Define types once, use on both sides and enjoy easy (de)serialisation. Cheers!
 
-This version of the package only supports Elm 0.18. Version 0.3.0.2 supports Elm 0.16 and Elm 0.17.
+This version of the package only supports Elm 0.19. Version 0.5.2 supports Elm 0.18, and Version 0.3.0.2 supports Elm 0.16 and Elm 0.17.
 
 Note that the [bartavelle/json-helpers](http://package.elm-lang.org/packages/bartavelle/json-helpers/latest/) package, with version >= 1.2.0, is expected by the generated Elm modules.
 

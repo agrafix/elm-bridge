@@ -1,3 +1,7 @@
+# v0.6.0
+
+ * Support for Elm 0.19 
+  
 # v0.5.2
 
  * Fix a bug about tuples.
