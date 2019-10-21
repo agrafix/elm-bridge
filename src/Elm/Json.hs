@@ -18,7 +18,6 @@ import           Data.Aeson.Types (SumEncoding (..))
 import           Data.List
 import           Elm.TyRep
 import           Elm.Utils
-import           Elm.Versions
 
 data MaybeHandling = Root | Leaf
                    deriving Eq

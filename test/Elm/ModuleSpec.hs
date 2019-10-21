@@ -26,7 +26,7 @@ $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef (defaultOptionsDropLower 5) ''Qux)
 
 moduleHeader' :: ElmVersion -> String -> String
-moduleHeader' Elm0p18 name = "module " ++ name ++ " exposing(..)"
+moduleHeader' Elm0p19 name = "module " ++ name ++ " exposing(..)"
 
 moduleCode :: ElmVersion -> String
 moduleCode elmVersion = unlines
@@ -113,14 +113,14 @@ makeElmModuleSpec =
     it "should produce the correct code" $
        do let modu = makeElmModule "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
           let modu' = makeElmModule "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
-          modu `shouldBe` (moduleCode Elm0p18)
-          modu' `shouldBe` (moduleCode' Elm0p18)
+          modu `shouldBe` moduleCode Elm0p19
+          modu' `shouldBe` moduleCode' Elm0p19
 
 version0p18Spec :: Spec
 version0p18Spec =
-  describe "makeElmModuleWithVersion Elm0p18" $
+  describe "makeElmModuleWithVersion Elm0p19" $
     it "should produce the correct code" $
-       do let modu = makeElmModuleWithVersion Elm0p18 "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
-          let modu' = makeElmModuleWithVersion Elm0p18 "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
-          modu `shouldBe` (moduleCode Elm0p18)
-          modu' `shouldBe` (moduleCode' Elm0p18)
+       do let modu = makeElmModuleWithVersion Elm0p19 "Foo" [DefineElm (Proxy :: Proxy (Bar a))]
+          let modu' = makeElmModuleWithVersion Elm0p19 "Qux" [DefineElm (Proxy :: Proxy (Qux a))]
+          modu `shouldBe` moduleCode Elm0p19
+          modu' `shouldBe` moduleCode' Elm0p19

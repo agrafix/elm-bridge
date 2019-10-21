@@ -1,30 +1,30 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Elm.JsonSpec (spec) where
 
-import Elm.Derive
-import Elm.TyRender
-import Elm.TyRep
-import Elm.Json
+import           Elm.Derive
+import           Elm.Json
+import           Elm.TyRender
+import           Elm.TyRep
 
-import Data.Proxy
-import Test.Hspec
-import Data.Char (toLower)
-import Data.Aeson.Types (defaultTaggedObject)
-import qualified Data.Map.Strict as M
-import qualified Data.Aeson.TH as TH
+import qualified Data.Aeson.TH    as TH
+import           Data.Aeson.Types (defaultTaggedObject)
+import           Data.Char        (toLower)
+import qualified Data.Map.Strict  as M
+import           Data.Proxy
+import           Test.Hspec
 
 data Foo
    = Foo
-   { f_name :: String
+   { f_name    :: String
    , f_blablub :: Int
    } deriving (Show, Eq)
 
 data Bar a
    = Bar
-   { b_name :: a
+   { b_name    :: a
    , b_blablub :: Int
-   , b_tuple :: (Int, String)
-   , b_list :: [Bool]
+   , b_tuple   :: (Int, String)
+   , b_list    :: [Bool]
    } deriving (Show, Eq)
 
 data SomeOpts a
