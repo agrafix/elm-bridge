@@ -258,11 +258,11 @@ jsonSerForDef etd =
 
 -- | Serialize a type like 'type Color = Red | Green | Blue' in a function like
 --
---     stringEncColor : Color -> String
---     stringEncColor x =
---       case x of
---         Red -> "red"
---         ...
+-- > stringEncColor : Color -> String
+-- > stringEncColor x =
+-- >   case x of
+-- >     Red -> "red"
+-- >     ...
 --
 -- This is mainly useful for types which are used as part of query parameters and url captures.
 stringSerForSimpleAdt :: ETypeDef -> String
@@ -315,20 +315,8 @@ stringParserForSimpleAdt etd =
         ++ " s =\n"
         ++ encodingDictionary opts
         ++ "\n"
-        -- ++ case allUnaries unarystring opts of
-        --   Just names -> " " ++ deriveUnaries names
-        --   Nothing -> "\n" ++ encodingDictionary opts ++ "\n"
       where
         tab n s = replicate n ' ' ++ s
-        -- deriveUnaries strs =
-        --   unlines
-        --     [ "",
-        --       "case s of",
-        --       intercalate
-        --         ", "
-        --         (map (\(o, s) -> "(" ++ show s ++ ", " ++ o ++ ")") strs)
-        --         ++ "]"
-        --     ]
         encodingDictionary [STC cname _ args] =
           "    " ++ mkDecoder cname args
         encodingDictionary os =
