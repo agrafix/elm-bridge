@@ -209,7 +209,7 @@ unaryAStringSer :: String
 unaryAStringSer = unlines
     [ "stringEncUnaryA : UnaryA -> String"
     , "stringEncUnaryA  val ="
-    , "    case v of"
+    , "    case val of"
     , "        UnaryA1  -> \"UnaryA1\""
     , "        UnaryA2  -> \"UnaryA2\""
     ]

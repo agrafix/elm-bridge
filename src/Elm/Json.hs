@@ -273,7 +273,7 @@ stringSerForSimpleAdt etd =
       where
         defaultEncoding os =
           unlines
-            ((makeName name False ++ " =") : "    case v of" : map mkcase os)
+            ((makeName name False ++ " =") : "    case val of" : map mkcase os)
         mkcase :: SumTypeConstructor -> String
         mkcase (STC cname oname (Anonymous args)) =
           replicate 8 ' '
@@ -308,25 +308,27 @@ stringSerForSimpleAdt etd =
 stringParserForSimpleAdt :: ETypeDef -> String
 stringParserForSimpleAdt etd =
   case etd of
-    ETypeSum (ESum name opts (SumEncoding' _encodingType) _ unarystring) ->
+    ETypeSum (ESum name opts (SumEncoding' _encodingType) _ _unarystring) ->
       decoderType name
         ++ "\n"
         ++ makeName name
-        ++ " s ="
-        ++ case allUnaries unarystring opts of
-          Just names -> " " ++ deriveUnaries names
-          Nothing -> "\n" ++ encodingDictionary opts ++ "\n"
+        ++ " s =\n"
+        ++ encodingDictionary opts
+        ++ "\n"
+        -- ++ case allUnaries unarystring opts of
+        --   Just names -> " " ++ deriveUnaries names
+        --   Nothing -> "\n" ++ encodingDictionary opts ++ "\n"
       where
         tab n s = replicate n ' ' ++ s
-        deriveUnaries strs =
-          unlines
-            [ "",
-              "case s of",
-              intercalate
-                ", "
-                (map (\(o, s) -> "(" ++ show s ++ ", " ++ o ++ ")") strs)
-                ++ "]"
-            ]
+        -- deriveUnaries strs =
+        --   unlines
+        --     [ "",
+        --       "case s of",
+        --       intercalate
+        --         ", "
+        --         (map (\(o, s) -> "(" ++ show s ++ ", " ++ o ++ ")") strs)
+        --         ++ "]"
+        --     ]
         encodingDictionary [STC cname _ args] =
           "    " ++ mkDecoder cname args
         encodingDictionary os =
