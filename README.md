@@ -70,6 +70,8 @@ jsonEncFoo  val =
    ]
 ```
 
+Also, there are functions `Elm.Json.stringSerForSimpleAdt` and `Elm.Json.stringParserForSimpleAdt` to generate functions for your non-JSON ADT types.
+
 For more usage examples check the tests or the examples dir.
 
 ## Install

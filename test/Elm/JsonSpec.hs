@@ -177,6 +177,16 @@ unaryAParse = unlines
     , "    in  decodeSumObjectWithSingleField  \"UnaryA\" jsonDecDictUnaryA"
     ]
 
+unaryAStringParser :: String
+unaryAStringParser = unlines
+    [ "stringDecUnaryA : String -> Maybe UnaryA"
+    , "stringDecUnaryA s ="
+    , "    case s of"
+    , "        \"UnaryA1\" -> Just UnaryA1"
+    , "        \"UnaryA2\" -> Just UnaryA2"
+    , "        _ -> Nothing"
+    ]
+
 unaryBParse :: String
 unaryBParse = unlines
     [ "jsonDecUnaryB : Json.Decode.Decoder ( UnaryB )"
@@ -193,6 +203,15 @@ unaryASer = unlines
     , "                    UnaryA1  -> (\"UnaryA1\", encodeValue (Json.Encode.list identity []))"
     , "                    UnaryA2  -> (\"UnaryA2\", encodeValue (Json.Encode.list identity []))"
     , "    in encodeSumObjectWithSingleField keyval val"
+    ]
+
+unaryAStringSer :: String
+unaryAStringSer = unlines
+    [ "stringEncUnaryA : UnaryA -> String"
+    , "stringEncUnaryA  val ="
+    , "    case val of"
+    , "        UnaryA1  -> \"UnaryA1\""
+    , "        UnaryA2  -> \"UnaryA2\""
     ]
 
 unaryBSer :: String
@@ -312,6 +331,10 @@ spec =
        it "should produce the correct ser code for unary unions" $ do
              jsonSerForDef rUnaryA `shouldBe` unaryASer
              jsonSerForDef rUnaryB `shouldBe` unaryBSer
+       it "should produce the correct stringSerForSimpleAdt code" $ do
+             stringSerForSimpleAdt rUnaryA `shouldBe` unaryAStringSer
+       it "should produce the correct stringParserForDef code" $ do
+             stringParserForSimpleAdt rUnaryA `shouldBe` unaryAStringParser
        it "should produce the correct parse code for aliases" $ do
              jsonParserForDef rFoo `shouldBe` fooParse
              jsonParserForDef rBar `shouldBe` barParse

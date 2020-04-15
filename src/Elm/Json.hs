@@ -11,6 +11,8 @@ module Elm.Json
     , jsonSerForDef
     , jsonParserForType
     , jsonSerForType
+    , stringSerForSimpleAdt
+    , stringParserForSimpleAdt
     )
 where
 
@@ -253,3 +255,87 @@ jsonSerForDef etd =
            ++ if newtyping
                   then " (" ++ et_name name ++ " val)"
                   else " val"
+
+-- | Serialize a type like 'type Color = Red | Green | Blue' in a function like
+--
+-- > stringEncColor : Color -> String
+-- > stringEncColor x =
+-- >   case x of
+-- >     Red -> "red"
+-- >     ...
+--
+-- This is mainly useful for types which are used as part of query parameters and url captures.
+stringSerForSimpleAdt :: ETypeDef -> String
+stringSerForSimpleAdt etd =
+  case etd of
+    ETypeSum (ESum name opts (SumEncoding' _se) _ _unarystring) ->
+      defaultEncoding opts
+      where
+        defaultEncoding os =
+          unlines
+            ((makeName name False ++ " =") : "    case val of" : map mkcase os)
+        mkcase :: SumTypeConstructor -> String
+        mkcase (STC cname oname (Anonymous args)) =
+          replicate 8 ' '
+            ++ cap cname
+            ++ " "
+            ++ argList args
+            ++ " -> "
+            ++ show oname
+        mkcase _ =
+          error "stringSerForSimpleAdt.mkcase: Expecting an Anonymous case"
+        argList a = unwords $ map (\i -> "v" ++ show i) [1 .. length a]
+    _ -> error "stringSerForSimpleAdt only works with ETypeSum"
+  where
+    fname name = "stringEnc" ++ et_name name
+    makeType name =
+      fname name
+        ++ " : "
+        ++ intercalate
+          " -> "
+          ([unwords (et_name name : map tv_name (et_args name))] ++ ["String"])
+    makeName name newtyping =
+      makeType name
+        ++ "\n"
+        ++ fname name
+        ++ " "
+        ++ unwords (map (\tv -> "localEncoder_" ++ tv_name tv) $ et_args name)
+        ++ if newtyping
+          then " (" ++ et_name name ++ " val)"
+          else " val"
+
+-- | Parse a String into a maybe-value for simple ADT types. See 'stringSerForSimpleAdt' for motivation
+stringParserForSimpleAdt :: ETypeDef -> String
+stringParserForSimpleAdt etd =
+  case etd of
+    ETypeSum (ESum name opts (SumEncoding' _encodingType) _ _unarystring) ->
+      decoderType name
+        ++ "\n"
+        ++ makeName name
+        ++ " s =\n"
+        ++ encodingDictionary opts
+        ++ "\n"
+      where
+        tab n s = replicate n ' ' ++ s
+        encodingDictionary [STC cname _ args] =
+          "    " ++ mkDecoder cname args
+        encodingDictionary os =
+          "    case s of\n"
+            ++ tab 8 ""
+            ++ intercalate ("\n" ++ replicate 8 ' ') (map dictEntry os)
+            ++ "\n"
+            ++ tab 8 "_ -> Nothing"
+        dictEntry (STC cname oname _args) =
+          show oname ++ " -> Just " ++ cname
+        mkDecoder _cname _ = error "impossible!"
+    _ -> error "impossible"
+  where
+    funcname name = "stringDec" ++ et_name name
+    prependTypes str = map (\tv -> str ++ tv_name tv) . et_args
+    decoderType name =
+      funcname name
+        ++ " : "
+        ++ intercalate " -> " (["String"] ++ [decoderTypeEnd name])
+    decoderTypeEnd name =
+      unwords ("Maybe" : et_name name : map tv_name (et_args name))
+    makeName name = unwords (funcname name : prependTypes "localDecoder_" name)
