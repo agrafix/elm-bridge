@@ -177,6 +177,7 @@ jsonSerForType' omitnull ty =
                                                 then jsonSerForType t'
                                                 else "(maybeEncode (" ++ jsonSerForType t' ++ "))"
       ETyApp (ETyCon (ETCon "Set")) t' -> "(encodeSet " ++ jsonSerForType t' ++ ")"
+      ETyApp (ETyApp (ETyCon (ETCon "Dict")) (ETyCon (ETCon "String"))) value -> "(Json.Encode.dict identity (" ++ jsonSerForType value ++ "))"
       ETyApp (ETyApp (ETyCon (ETCon "Dict")) key) value -> "(encodeMap (" ++ jsonSerForType key ++ ") (" ++ jsonSerForType value ++ "))"
       _ ->
           case unpackTupleType ty of
