@@ -1,22 +1,23 @@
+{-# LANGUAGE CPP             #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE CPP #-}
 module Main where
 
-import Elm.Derive
-import Elm.Module
-import Data.Proxy
-import Data.Aeson hiding (defaultOptions)
-import Data.Aeson.Types (SumEncoding(..))
-import Test.QuickCheck.Arbitrary
-import Test.QuickCheck.Gen (sample', oneof, Gen)
-import qualified Data.Text as T
-import Control.Applicative
-import System.Environment
-import Data.Char (toLower)
-import Data.List (stripPrefix)
-import Prelude
+import           Control.Applicative
+import           Data.Aeson                hiding (defaultOptions)
+import           Data.Aeson.Types          (SumEncoding (..))
+import           Data.Char                 (toLower)
+import           Data.List                 (stripPrefix)
+import qualified Data.Map.Strict           as M
+import           Data.Proxy
+import qualified Data.Text                 as T
+import           Elm.Derive
+import           Elm.Module
+import           Prelude
+import           System.Environment
+import           Test.QuickCheck.Arbitrary
+import           Test.QuickCheck.Gen       (Gen, oneof, sample')
 
-data Record1 a = Record1 { _r1foo :: Int, _r1bar :: Maybe Int, _r1baz :: a, _r1qux :: Maybe a } deriving Show
+data Record1 a = Record1 { _r1foo :: Int, _r1bar :: Maybe Int, _r1baz :: a, _r1qux :: Maybe a, _r1jmap :: M.Map String Int } deriving Show
 data Record2 a = Record2 { _r2foo :: Int, _r2bar :: Maybe Int, _r2baz :: a, _r2qux :: Maybe a } deriving Show
 
 data Sum01 a = Sum01A a | Sum01B (Maybe a) | Sum01C a a | Sum01D { _s01foo :: a } | Sum01E { _s01bar :: Int, _s01baz :: Int } deriving Show
@@ -61,7 +62,7 @@ dropAll needle haystack
   = case stripPrefix needle haystack of
       Just nxt -> dropAll needle nxt
       Nothing -> case haystack of
-                   [] -> []
+                   []     -> []
                    (x:xs) -> x : dropAll needle xs
 
 
@@ -186,7 +187,7 @@ $(deriveBoth defaultOptions { unwrapUnaryRecords = False }''NT3)
 $(deriveBoth defaultOptions { fieldLabelModifier = drop 4, unwrapUnaryRecords = False } ''NT4)
 
 instance Arbitrary a => Arbitrary (Record1 a) where
-    arbitrary = Record1 <$> arbitrary <*> fmap Just arbitrary <*> arbitrary <*> fmap Just arbitrary
+    arbitrary = Record1 <$> arbitrary <*> fmap Just arbitrary <*> arbitrary <*> fmap Just arbitrary <*> (M.singleton "a" <$> arbitrary)
 instance Arbitrary a => Arbitrary (Record2 a) where
     arbitrary = Record2 <$> arbitrary <*> fmap Just arbitrary <*> arbitrary <*> fmap Just arbitrary
 
@@ -234,8 +235,10 @@ elmModuleContent = unlines
     , "-- This module requires the following packages:"
     , "-- * bartavelle/json-helpers"
     , "-- * NoRedInk/elm-json-decode-pipeline"
+    , "-- * elm/json"
+    , "-- * elm-explorations/test"
     , ""
-    , "import Dict exposing (Dict)"
+    , "import Dict exposing (Dict, fromList)"
     , "import Expect exposing (Expectation, equal)"
     , "import Set exposing (Set)"
     , "import Json.Decode exposing (field, Value)"
@@ -458,4 +461,3 @@ main = do
                        , dropAll "(Json.Decode.list Json.Decode.int)" (mkDecodeTest "NT" "_nt" "4" nt4)
                        , dropAll "(Json.Encode.list Json.Encode.int)" (mkEncodeTest "NT" "_nt" "4" nt4)
                        ]
-
