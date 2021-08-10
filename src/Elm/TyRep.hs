@@ -10,7 +10,6 @@ import           Data.Typeable    (TyCon, TypeRep, Typeable, splitTyConApp,
 
 import           Data.Aeson.Types (SumEncoding (..))
 import           Data.Maybe       (fromMaybe)
-import           Data.Monoid      ((<>))
 
 -- | Type definition, including constructors.
 data ETypeDef

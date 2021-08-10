@@ -94,7 +94,7 @@ optSumType se =
         TaggedObject tn cn    -> [|SumEncoding' (TaggedObject tn cn)|]
         UntaggedValue         -> [|SumEncoding' UntaggedValue|]
 
-runDerive :: Name -> [TyVarBndr] -> (Q Exp -> Q Exp) -> Q [Dec]
+runDerive :: Name -> [TyVarBndr ()] -> (Q Exp -> Q Exp) -> Q [Dec]
 runDerive name vars mkBody =
     liftM (:[]) elmDefInst
     where
@@ -122,10 +122,10 @@ runDerive name vars mkBody =
       argNames =
           flip map vars $ \v ->
               case v of
-                PlainTV tv    -> tv
-                KindedTV tv _ -> tv
+                PlainTV tv _  -> tv
+                KindedTV tv _ _ -> tv
 
-deriveAlias :: Bool -> A.Options -> Name -> [TyVarBndr] -> [VarStrictType] -> Q [Dec]
+deriveAlias :: Bool -> A.Options -> Name -> [TyVarBndr ()] -> [VarStrictType] -> Q [Dec]
 deriveAlias isNewtype opts name vars conFields =
         runDerive name vars $ \typeName ->
                 [|ETypeAlias (EAlias $typeName $fields omitNothing isNewtype unwrapUnary)|] -- default to no newtype
@@ -140,7 +140,7 @@ deriveAlias isNewtype opts name vars conFields =
             fldName = A.fieldLabelModifier opts $ nameBase fname
             fldType = compileType ftype
 
-deriveSum :: A.Options -> Name -> [TyVarBndr] -> [Con] -> Q [Dec]
+deriveSum :: A.Options -> Name -> [TyVarBndr ()] -> [Con] -> Q [Dec]
 deriveSum opts name vars constrs =
     runDerive name vars $ \typeName ->
         [|ETypeSum (ESum $typeName $sumOpts $sumEncOpts omitNothing allNullary)|]
@@ -164,7 +164,7 @@ deriveSum opts name vars constrs =
                 in [|STC b n (Named $tyArgs)|]
             _ -> fail ("Can't derive this sum: " ++ show c)
 
-deriveSynonym :: A.Options -> Name -> [TyVarBndr] -> Type -> Q [Dec]
+deriveSynonym :: A.Options -> Name -> [TyVarBndr ()] -> Type -> Q [Dec]
 deriveSynonym _ name vars otherT =
     runDerive name vars $ \typeName ->
         [|ETypePrimAlias (EPrimAlias $typeName $otherType)|]
