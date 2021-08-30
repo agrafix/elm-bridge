@@ -118,23 +118,23 @@ defaultTypeAlterations t = case t of
                             ETyApp (ETyCon (ETCon "Set")) s                 -> checkSet $ defaultTypeAlterations s
                             ETyApp (ETyApp (ETyCon (ETCon "HashMap")) k) v  -> checkMap (defaultTypeAlterations k) (defaultTypeAlterations v)
                             ETyApp (ETyApp (ETyCon (ETCon "THashMap")) k) v -> checkMap (defaultTypeAlterations k) (defaultTypeAlterations v)
+                            ETyApp (ETyCon (ETCon "IntMap")) v              -> checkMap int (defaultTypeAlterations v)
                             ETyApp (ETyApp (ETyCon (ETCon "Map")) k) v      -> checkMap (defaultTypeAlterations k) (defaultTypeAlterations v)
                             ETyApp (ETyApp (ETyCon (ETCon "Tagged")) _) v   -> defaultTypeAlterations v
                             ETyApp x y                                      -> ETyApp (defaultTypeAlterations x) (defaultTypeAlterations y)
-                            ETyCon (ETCon "Integer")                        -> ETyCon (ETCon "Int")
-                            ETyCon (ETCon "Natural")                        -> ETyCon (ETCon "Int")
-                            ETyCon (ETCon "Text")                           -> ETyCon (ETCon "String")
-                            ETyCon (ETCon "Vector")                         -> ETyCon (ETCon "List")
-                            ETyCon (ETCon "Double")                         -> ETyCon (ETCon "Float")
-                            ETyCon (ETCon "UTCTime")                        -> ETyCon (ETCon "Posix")
+                            ETyCon (ETCon "Integer")                        -> int
+                            ETyCon (ETCon "Natural")                        -> tc "Int"
+                            ETyCon (ETCon "Text")                           -> tc "String"
+                            ETyCon (ETCon "Vector")                         -> tc "List"
+                            ETyCon (ETCon "Double")                         -> tc "Float"
+                            ETyCon (ETCon "UTCTime")                        -> tc "Posix"
                             _                                               -> t
     where
-        isString (ETyCon (ETCon "String")) = True
-        isString _                         = False
-        isComparable (ETyCon (ETCon n)) = n `elem` ["String", "Int"]
-        isComparable _                  = False -- TODO check what Elm actually uses
+        int = tc "Int"
+        isComparable (ETyCon (ETCon n)) = n `elem` ["String", "Int", "Float", "Posix", "Char"]
+        isComparable _                  = False -- TODO Lists and Tuples of comparable types
         tc = ETyCon . ETCon
-        checkMap k v | isString k = ETyApp (ETyApp (tc "Dict") k) v
+        checkMap k v | isComparable k = ETyApp (ETyApp (tc "Dict") k) v
                      | otherwise  = ETyApp (tc "List") (ETyApp (ETyApp (ETyTuple 2) k) v)
-        checkSet s | isComparable s = ETyApp (ETyCon (ETCon "Set")) s
-                   | otherwise = ETyApp (ETyCon (ETCon "List")) s
+        checkSet s | isComparable s = ETyApp (tc "Set") s
+                   | otherwise = ETyApp (tc "List") s
