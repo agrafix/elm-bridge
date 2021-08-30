@@ -1,11 +1,15 @@
+# v0.8.0
+
+ * Directly support integer keys in dictionnaries, thanks to odanoboru
+
 # v0.7.0
 
  * Support for GHC 9
 
 # v0.6.0
 
- * Support for Elm 0.19 
-  
+ * Support for Elm 0.19
+
 # v0.5.2
 
  * Fix a bug about tuples.
