@@ -45,6 +45,9 @@ data SimpleRecord04 a = SimpleRecord04 { _s04qux :: a } deriving Show
 data SumUntagged a = SMInt Int | SMList a
               deriving Show
 
+-- | It include unit, and non single field.
+data SumIncludeUnit a = SumIncludeUnitZero | SumIncludeUnitOne a | SumIncludeUnitTwo a a deriving Show
+
 newtype NT1 = NT1 [Int] deriving Show
 newtype NT2 = NT2 { _nt2foo :: [Int] } deriving Show
 newtype NT3 = NT3 [Int] deriving Show
@@ -181,6 +184,9 @@ $(deriveBoth defaultOptions{ allNullaryToStringTag = True , unwrapUnaryRecords =
 
 $(deriveBoth defaultOptions{ sumEncoding = UntaggedValue } ''SumUntagged)
 
+-- servant-elm use TaggedObject.
+$(deriveBoth defaultOptions{ fieldLabelModifier = drop 14, sumEncoding = TaggedObject "tag" "content" } ''SumIncludeUnit)
+
 $(deriveBoth defaultOptions ''NT1)
 $(deriveBoth defaultOptions { fieldLabelModifier = drop 4 } ''NT2)
 $(deriveBoth defaultOptions { unwrapUnaryRecords = False }''NT3)
@@ -223,6 +229,9 @@ instance Arbitrary a => Arbitrary (SimpleRecord03 a) where arbitrary = SimpleRec
 instance Arbitrary a => Arbitrary (SimpleRecord04 a) where arbitrary = SimpleRecord04 <$> arbitrary
 
 instance Arbitrary a => Arbitrary (SumUntagged a) where arbitrary = oneof [ SMInt <$> arbitrary, SMList <$> arbitrary ]
+
+instance Arbitrary a => Arbitrary (SumIncludeUnit a) where
+  arbitrary = oneof [ return SumIncludeUnitZero, SumIncludeUnitOne <$> arbitrary, SumIncludeUnitTwo <$> arbitrary <*> arbitrary]
 
 instance Arbitrary NT1 where arbitrary = fmap NT1 arbitrary
 instance Arbitrary NT2 where arbitrary = fmap NT2 arbitrary
@@ -290,6 +299,7 @@ elmModuleContent = unlines
     , "              , sumDecode11"
     , "              , sumDecode12"
     , "              , sumDecodeUntagged"
+    , "              , sumDecodeIncludeUnit"
     , "              ]"
     , ""
     , "sumEncode : Test"
@@ -307,6 +317,7 @@ elmModuleContent = unlines
     , "              , sumEncode11"
     , "              , sumEncode12"
     , "              , sumEncodeUntagged"
+    , "              , sumEncodeIncludeUnit"
     , "              ]"
     , ""
     , "simpleDecode : Test"
@@ -364,6 +375,7 @@ elmModuleContent = unlines
         , DefineElm (Proxy :: Proxy (SimpleRecord03 a))
         , DefineElm (Proxy :: Proxy (SimpleRecord04 a))
         , DefineElm (Proxy :: Proxy (SumUntagged a))
+        , DefineElm (Proxy :: Proxy (SumIncludeUnit a))
         , DefineElm (Proxy :: Proxy NT1)
         , DefineElm (Proxy :: Proxy NT2)
         , DefineElm (Proxy :: Proxy NT3)
@@ -397,6 +409,7 @@ main = do
     sr03 <- sample' arbitrary :: IO [SimpleRecord03 [Int]]
     sr04 <- sample' arbitrary :: IO [SimpleRecord04 [Int]]
     sm   <- sample' arbitrary :: IO [SumUntagged [Int]]
+    smiu <- sample' arbitrary :: IO [SumIncludeUnit [Int]]
     nt1  <- sample' arbitrary :: IO [NT1]
     nt2  <- sample' arbitrary :: IO [NT2]
     nt3  <- sample' arbitrary :: IO [NT3]
@@ -452,6 +465,8 @@ main = do
                        , mkSimpleRecordDecodeTest "04" sr04
                        , mkSumEncodeTest "Untagged" sm
                        , mkSumDecodeTest "Untagged" sm
+                       , mkSumEncodeTest "IncludeUnit" smiu
+                       , mkSumDecodeTest "IncludeUnit" smiu
                        , mkDecodeTestNT "NT" "_nt" "1" extractNT1 nt1
                        , mkEncodeTestNT "NT" "_nt" "1" extractNT1 nt1
                        , mkDecodeTestNT "NT" "_nt" "2" extractNT2 nt2
