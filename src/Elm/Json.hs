@@ -128,7 +128,12 @@ jsonParserForDef etd =
             encodingDictionary os = tab 4 "let " ++ dictName ++ " = Dict.fromList\n" ++ tab 12 "[ " ++ intercalate ("\n" ++ replicate 12 ' ' ++ ", ") (map dictEntry os) ++ "\n" ++ tab 12 "]"
             isObjectSet = case encodingType of
                               TaggedObject _ _
-                                | length opts > 1 -> "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " (map (show . _stcName) $ filter (isNamed . _stcFields) opts) ++ "]")
+                                | length opts > 1 ->
+                                  "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " objectSet ++ "]")
+                                where objectSet =
+                                        (map (show . _stcName) $ filter (isNamed . _stcFields) opts) ++
+                                        -- if field is empty, it do not have content, so add to objectSet.
+                                        (map (show . _stcName) $ filter (isEmpty . _stcFields) opts)
                               _ -> ""
             dictEntry (STC cname oname args) = "(" ++ show oname ++ ", " ++ mkDecoder cname args ++ ")"
             mkDecoder cname (Named args)  =  lazy $ "Json.Decode.map "
