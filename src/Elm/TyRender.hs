@@ -20,7 +20,7 @@ instance ElmRenderable EType where
     renderElm ty =
         case unpackTupleType ty of
           [t] -> renderSingleTy t
-          xs  -> "(" ++ intercalate ", " (map renderSingleTy xs) ++ ")"
+          xs  -> "(" ++ intercalate ", " (map renderElm xs) ++ ")"
         where
           renderApp (ETyApp l r) = renderApp l ++ " " ++ renderElm r
           renderApp x            = renderElm x
