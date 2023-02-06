@@ -30,7 +30,7 @@ import           Elm.TyRep
 
 import           Control.Applicative
 import           Control.Monad
-import           Data.Aeson.TH              (SumEncoding (..), deriveJSON)
+import           Data.Aeson.TH              (SumEncoding (..), deriveJSON, tagSingleConstructors)
 import qualified Data.Aeson.TH              as A
 import           Data.Char                  (toLower)
 import           Language.Haskell.TH
@@ -187,7 +187,7 @@ deriveElmDef opts name =
          DataD _ _ tyVars _ constrs _ ->
              case constrs of
                [] -> fail "Can not derive empty data decls"
-               [RecC _ conFields] -> deriveAlias False opts name tyVars conFields
+               [RecC _ conFields] | not (tagSingleConstructors opts) -> deriveAlias False opts name tyVars conFields
                _ -> deriveSum opts name tyVars constrs
          NewtypeD [] _ [] Nothing (NormalC _ [(Bang NoSourceUnpackedness NoSourceStrictness, otherTy)]) [] ->
             deriveSynonym opts name [] otherTy
