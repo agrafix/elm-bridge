@@ -112,7 +112,7 @@ jsonParserForDef etd =
             tab n s = replicate n ' ' ++ s
             typename = et_name name
             declLine [_] | TaggedObject tg el <- encodingType = 
-              unwords [ "decodeSumTaggedObject", show typename, show tg, show el, dictName, isObjectSetName ]
+              "    in  " ++  unwords [ "decodeSumTaggedObject", show typename, show tg, show el, dictName, isObjectSetName ]
             declLine [_] = ""
             declLine _   = "    in  " ++ case encodingType of
                            ObjectWithSingleField -> unwords [ "decodeSumObjectWithSingleField ", show typename, dictName]
