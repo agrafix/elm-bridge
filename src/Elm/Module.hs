@@ -123,7 +123,9 @@ defaultTypeAlterations t = case t of
                             ETyApp (ETyApp (ETyCon (ETCon "Tagged")) _) v   -> defaultTypeAlterations v
                             ETyApp x y                                      -> ETyApp (defaultTypeAlterations x) (defaultTypeAlterations y)
                             ETyCon (ETCon "Integer")                        -> int
-                            ETyCon (ETCon "Natural")                        -> tc "Int"
+                            ETyCon (ETCon "Natural")                        -> int
+                            ETyCon (ETCon "Int32")                          -> int
+                            ETyCon (ETCon "Int64")                          -> int
                             ETyCon (ETCon "Text")                           -> tc "String"
                             ETyCon (ETCon "Vector")                         -> tc "List"
                             ETyCon (ETCon "Double")                         -> tc "Float"
