@@ -40,6 +40,7 @@ jsonParserForType' mh ty =
       ETyCon (ETCon "Float") -> "Json.Decode.float"
       ETyCon (ETCon "String") -> "Json.Decode.string"
       ETyCon (ETCon "Bool") -> "Json.Decode.bool"
+      ETyCon (ETCon "UTC") -> "Json.Decode.Extra.datetime"
       ETyCon (ETCon c) -> "jsonDec" ++ c
       ETyApp (ETyCon (ETCon "List")) t' -> "Json.Decode.list (" ++ jsonParserForType t' ++ ")"
       ETyApp (ETyCon (ETCon "Maybe")) t' -> if mh == Root
