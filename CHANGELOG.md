@@ -1,3 +1,7 @@
+# v0.8.3
+
+ * Support Int32 and Int64, from domenkozar
+
 # v0.8.0
 
  * Directly support integer keys in dictionnaries, thanks to odanoboru
