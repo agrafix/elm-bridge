@@ -3,6 +3,7 @@
 -}
 module Elm.TyRep where
 
+import qualified Data.Char as Char
 import           Data.List
 import           Data.Proxy
 import           Data.Typeable    (TyCon, TypeRep, Typeable, splitTyConApp,
@@ -186,11 +187,8 @@ toElmType ty = toElmType' $ typeRep ty
                 (con, args) = splitTyConApp rep
 
         isTuple :: String -> Bool
-        isTuple ('(':xs) = isTuple' $ reverse xs
-          where
-            isTuple' :: String -> Bool
-            isTuple' (')':xs') = all (== ',') xs'
-            isTuple' _         = False
+        isTuple "Unit" = True
+        isTuple ('T': 'u' : 'p': 'l' : 'e' : ds) = all Char.isDigit ds
         isTuple _ = False
 
         typeApplication :: TyCon -> [TypeRep] -> EType
