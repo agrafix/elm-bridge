@@ -3,7 +3,7 @@
 -}
 module Elm.TyRep where
 
-import qualified Data.Char as Char
+import qualified Data.Char        as Char
 import           Data.List
 import           Data.Proxy
 import           Data.Typeable    (TyCon, TypeRep, Typeable, splitTyConApp,
@@ -85,8 +85,8 @@ isNamed s =
 
 isEmpty :: SumTypeFields -> Bool
 isEmpty (Anonymous []) = True
-isEmpty (Named []) = True
-isEmpty _ = False
+isEmpty (Named [])     = True
+isEmpty _              = False
 
 data SumTypeConstructor
     = STC
@@ -189,6 +189,11 @@ toElmType ty = toElmType' $ typeRep ty
         isTuple :: String -> Bool
         isTuple "Unit" = True
         isTuple ('T': 'u' : 'p': 'l' : 'e' : ds) = all Char.isDigit ds
+        isTuple ('(':xs) = isTuple' $ reverse xs -- base <= 4.17
+          where
+            isTuple' :: String -> Bool
+            isTuple' (')':xs') = all (== ',') xs'
+            isTuple' _         = False
         isTuple _ = False
 
         typeApplication :: TyCon -> [TypeRep] -> EType
