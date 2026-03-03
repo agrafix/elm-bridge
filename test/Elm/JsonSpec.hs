@@ -85,7 +85,7 @@ fooParse :: String
 fooParse = unlines
     [ "jsonDecFoo : Json.Decode.Decoder ( Foo )"
     , "jsonDecFoo ="
-    , "   Json.Decode.succeed (\\pname pblablub -> {name = pname, blablub = pblablub})"
+    , "   Json.Decode.succeed Foo"
     , "   |> required \"name\" (Json.Decode.string)"
     , "   |> required \"blablub\" (Json.Decode.int)"
     ]
@@ -117,7 +117,7 @@ barParse :: String
 barParse = unlines
     [ "jsonDecBar : Json.Decode.Decoder a -> Json.Decode.Decoder ( Bar a )"
     , "jsonDecBar localDecoder_a ="
-    , "   Json.Decode.succeed (\\pname pblablub ptuple plist -> {name = pname, blablub = pblablub, tuple = ptuple, list = plist})"
+    , "   Json.Decode.succeed Bar"
     , "   |> required \"name\" (localDecoder_a)"
     , "   |> required \"blablub\" (Json.Decode.int)"
     , "   |> required \"tuple\" (Json.Decode.map2 tuple2 (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string)))"
@@ -129,8 +129,8 @@ bazParse = unlines
     [ "jsonDecBaz : Json.Decode.Decoder a -> Json.Decode.Decoder ( Baz a )"
     , "jsonDecBaz localDecoder_a ="
     , "    let jsonDecDictBaz = Dict.fromList"
-    , "            [ (\"Baz1\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz1 (   Json.Decode.succeed (\\pfoo pqux -> {foo = pfoo, qux = pqux})    |> required \"foo\" (Json.Decode.int)    |> required \"qux\" (jsonDecMap (Json.Decode.int) (localDecoder_a)))))"
-    , "            , (\"Baz2\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz2 (   Json.Decode.succeed (\\pbar pstr -> {bar = pbar, str = pstr})    |> fnullable \"bar\" (Json.Decode.int)    |> required \"str\" (Json.Decode.string))))"
+    , "            [ (\"Baz1\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz1 (   Json.Decode.succeed Baz    |> required \"foo\" (Json.Decode.int)    |> required \"qux\" (jsonDecMap (Json.Decode.int) (localDecoder_a)))))"
+    , "            , (\"Baz2\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz2 (   Json.Decode.succeed Baz    |> fnullable \"bar\" (Json.Decode.int)    |> required \"str\" (Json.Decode.string))))"
     , "            , (\"Testing\", Json.Decode.lazy (\\_ -> Json.Decode.map Testing (jsonDecBaz (localDecoder_a))))"
     , "            ]"
     , "    in  decodeSumObjectWithSingleField  \"Baz\" jsonDecDictBaz"
@@ -161,7 +161,7 @@ test1Parse :: String
 test1Parse = unlines
     [ "jsonDecTestComp : Json.Decode.Decoder a -> Json.Decode.Decoder ( TestComp a )"
     , "jsonDecTestComp localDecoder_a ="
-    , "   Json.Decode.succeed (\\pt1 pt2 -> {t1 = pt1, t2 = pt2})"
+    , "   Json.Decode.succeed TestComp"
     , "   |> required \"t1\" (jsonDecChange (Json.Decode.int))"
     , "   |> required \"t2\" (jsonDecChange (localDecoder_a))"
     ]
@@ -272,7 +272,7 @@ ntdParse :: String
 ntdParse = unlines
   [ "jsonDecNTD : Json.Decode.Decoder ( NTD )"
   , "jsonDecNTD ="
-  , "   Json.Decode.succeed (\\pgetNtd -> (NTD {getNtd = pgetNtd}))"
+  , "   Json.Decode.succeed NTD"
   , "   |> required \"getNtd\" (Json.Decode.int)"
   ]
 
@@ -298,7 +298,7 @@ phantomDParse :: String
 phantomDParse = unlines
   [ "jsonDecPhantomD : Json.Decode.Decoder a -> Json.Decode.Decoder ( PhantomD a )"
   , "jsonDecPhantomD localDecoder_a ="
-  , "   Json.Decode.succeed (\\pgetPhantomD -> (PhantomD {getPhantomD = pgetPhantomD}))"
+  , "   Json.Decode.succeed PhantomD"
   , "   |> required \"getPhantomD\" (Json.Decode.int)"
   ]
 
