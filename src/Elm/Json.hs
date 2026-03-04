@@ -62,16 +62,13 @@ jsonParserForType' mh ty =
                 in "Json.Decode.map" ++ show tupleLen ++ " tuple" ++ show tupleLen ++ " "
                     ++ unwords (zipWith (\i t' -> "(Json.Decode.index " ++ show (i :: Int) ++ " (" ++ jsonParserForType t' ++ "))") [0..] xs)
 
-parseRecords :: Maybe ETypeName -> Bool -> [(String, EType)] -> [String]
-parseRecords newtyped unwrap fields =
+parseRecords :: String -> Bool -> [(String, EType)] -> [String]
+parseRecords typename unwrap fields  =
       case fields of
         [(_, ftype)] | unwrap -> [ succeed ++ " |> custom (" ++ jsonParserForType' (o ftype) ftype ++ ")" ]
         _ -> succeed : map mkField fields
     where
-        succeed = "   Json.Decode.succeed (\\" ++ unwords (map ( ('p':) . fst ) fields) ++ " -> " ++ mkNewtype ("{" ++ intercalate ", " (map (\(fldName, _) -> fixReserved fldName ++ " = p" ++ fldName) fields) ++ "}") ++ ")"
-        mkNewtype x = case newtyped of
-                          Nothing -> x
-                          Just nm -> "(" ++ et_name nm ++ " " ++ x ++ ")"
+        succeed = "   Json.Decode.succeed " ++ typename
         o fldType = if isOption fldType
                       then Root
                       else Leaf
@@ -97,10 +94,10 @@ jsonParserForDef etd =
           , makeName name ++  " ="
           , "    " ++ jsonParserForType ty
           ]
-      ETypeAlias (EAlias name fields _ newtyping unwrap) -> unlines
+      ETypeAlias (EAlias name fields _ _ unwrap) -> unlines
           ( decoderType name
           : (makeName name ++ " =")
-          : parseRecords (if newtyping then Just name else Nothing) unwrap fields
+          : parseRecords (et_name name) unwrap fields
           )
       ETypeSum (ESum name opts (SumEncoding' encodingType) _ unarystring) ->
             decoderType name ++ "\n" ++
@@ -131,15 +128,15 @@ jsonParserForDef etd =
                                 | length opts > 1 ->
                                   "\n" ++ tab 8 (isObjectSetName ++ " = " ++ "Set.fromList [" ++ intercalate ", " objectSet ++ "]")
                                 where objectSet =
-                                        (map (show . _stcName) $ filter (isNamed . _stcFields) opts) ++
+                                        map (show . _stcName) (filter (isNamed . _stcFields) opts) ++
                                         -- if field is empty, it do not have content, so add to objectSet.
-                                        (map (show . _stcName) $ filter (isEmpty . _stcFields) opts)
+                                        map (show . _stcName) (filter (isEmpty . _stcFields) opts)
                               _ -> ""
             dictEntry (STC cname oname args) = "(" ++ show oname ++ ", " ++ mkDecoder cname args ++ ")"
             mkDecoder cname (Named args)  =  lazy $ "Json.Decode.map "
                                          ++ cname
                                          ++ " ("
-                                         ++ unwords (parseRecords Nothing False args)
+                                         ++ unwords (parseRecords (et_name name) False args)
                                          ++ ")"
 
             mkDecoder cname (Anonymous args) = lazy $ unwords ( decodeFunction
@@ -300,7 +297,7 @@ stringSerForSimpleAdt etd =
         ++ " : "
         ++ intercalate
           " -> "
-          ([unwords (et_name name : map tv_name (et_args name))] ++ ["String"])
+          (unwords (et_name name : map tv_name (et_args name)) : ["String"])
     makeName name newtyping =
       makeType name
         ++ "\n"
@@ -342,7 +339,7 @@ stringParserForSimpleAdt etd =
     decoderType name =
       funcname name
         ++ " : "
-        ++ intercalate " -> " (["String"] ++ [decoderTypeEnd name])
+        ++ intercalate " -> " ("String" : [decoderTypeEnd name])
     decoderTypeEnd name =
       unwords ("Maybe" : et_name name : map tv_name (et_args name))
     makeName name = unwords (funcname name : prependTypes "localDecoder_" name)
