@@ -62,13 +62,18 @@ jsonParserForType' mh ty =
                 in "Json.Decode.map" ++ show tupleLen ++ " tuple" ++ show tupleLen ++ " "
                     ++ unwords (zipWith (\i t' -> "(Json.Decode.index " ++ show (i :: Int) ++ " (" ++ jsonParserForType t' ++ "))") [0..] xs)
 
-parseRecords :: String -> Bool -> [(String, EType)] -> [String]
-parseRecords typename unwrap fields  =
+parseRecords :: String -> Bool -> Bool -> [(String, EType)] -> [String]
+parseRecords typename newtyping unwrap fields  =
       case fields of
         [(_, ftype)] | unwrap -> [ succeed ++ " |> custom (" ++ jsonParserForType' (o ftype) ftype ++ ")" ]
         _ -> succeed : map mkField fields
     where
-        succeed = "   Json.Decode.succeed " ++ typename
+        succeed = "   Json.Decode.succeed " ++ constructorExpr
+        constructorExpr
+          | newtyping = "(\\" ++ unwords paramNames ++ " -> " ++ typename ++ " { " ++ intercalate ", " (map (\n -> n ++ " = p" ++ n) fieldNames) ++ " })"
+          | otherwise = typename
+        fieldNames = map fst fields
+        paramNames = map ("p" ++) fieldNames
         o fldType = if isOption fldType
                       then Root
                       else Leaf
@@ -94,10 +99,10 @@ jsonParserForDef etd =
           , makeName name ++  " ="
           , "    " ++ jsonParserForType ty
           ]
-      ETypeAlias (EAlias name fields _ _ unwrap) -> unlines
+      ETypeAlias (EAlias name fields _ newtyping unwrap) -> unlines
           ( decoderType name
           : (makeName name ++ " =")
-          : parseRecords (et_name name) unwrap fields
+          : parseRecords (et_name name) newtyping unwrap fields
           )
       ETypeSum (ESum name opts (SumEncoding' encodingType) _ unarystring) ->
             decoderType name ++ "\n" ++
@@ -136,7 +141,7 @@ jsonParserForDef etd =
             mkDecoder cname (Named args)  =  lazy $ "Json.Decode.map "
                                          ++ cname
                                          ++ " ("
-                                         ++ unwords (parseRecords (et_name name) False args)
+                                         ++ unwords (parseRecords (et_name name) False False args)
                                          ++ ")"
 
             mkDecoder cname (Anonymous args) = lazy $ unwords ( decodeFunction
