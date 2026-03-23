@@ -59,6 +59,9 @@ newtype PhantomB a = PhantomB { getPhantomB :: Int }
 newtype PhantomC a = PhantomC Int
 newtype PhantomD a = PhantomD { getPhantomD :: Int }
 
+-- Regression test for issue #65: newtype with record field decoder was broken
+newtype APICity = APICity { cityName :: String }
+
 $(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
 $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef (defaultOptionsDropLower 1) ''TestComp)
@@ -77,6 +80,7 @@ $(deriveElmDef defaultOptions ''PhantomA)
 $(deriveElmDef defaultOptions ''PhantomB)
 $(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''PhantomC)
 $(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''PhantomD)
+$(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''APICity)
 
 fooSer :: String
 fooSer = "jsonEncFoo : Foo -> Value\njsonEncFoo  val =\n   Json.Encode.object\n   [ (\"name\", Json.Encode.string val.name)\n   , (\"blablub\", Json.Encode.int val.blablub)\n   ]\n"
@@ -272,7 +276,7 @@ ntdParse :: String
 ntdParse = unlines
   [ "jsonDecNTD : Json.Decode.Decoder ( NTD )"
   , "jsonDecNTD ="
-  , "   Json.Decode.succeed NTD"
+  , "   Json.Decode.succeed (\\pgetNtd -> NTD { getNtd = pgetNtd })"
   , "   |> required \"getNtd\" (Json.Decode.int)"
   ]
 
@@ -298,8 +302,17 @@ phantomDParse :: String
 phantomDParse = unlines
   [ "jsonDecPhantomD : Json.Decode.Decoder a -> Json.Decode.Decoder ( PhantomD a )"
   , "jsonDecPhantomD localDecoder_a ="
-  , "   Json.Decode.succeed PhantomD"
+  , "   Json.Decode.succeed (\\pgetPhantomD -> PhantomD { getPhantomD = pgetPhantomD })"
   , "   |> required \"getPhantomD\" (Json.Decode.int)"
+  ]
+
+-- Regression test for issue #65
+apiCityParse :: String
+apiCityParse = unlines
+  [ "jsonDecAPICity : Json.Decode.Decoder ( APICity )"
+  , "jsonDecAPICity ="
+  , "   Json.Decode.succeed (\\pcityName -> APICity { cityName = pcityName })"
+  , "   |> required \"cityName\" (Json.Decode.string)"
   ]
 
 spec :: Spec
@@ -323,6 +336,7 @@ spec =
            rPhantomB = compileElmDef (Proxy :: Proxy (PhantomB a))
            rPhantomC = compileElmDef (Proxy :: Proxy (PhantomC a))
            rPhantomD = compileElmDef (Proxy :: Proxy (PhantomD a))
+           rAPICity = compileElmDef (Proxy :: Proxy APICity)
        it "should produce the correct ser code" $ do
              jsonSerForDef rFoo `shouldBe` fooSer
              jsonSerForDef rBar `shouldBe` barSer
@@ -360,3 +374,5 @@ spec =
             jsonParserForDef rPhantomB `shouldBe` phantomBParse
             jsonParserForDef rPhantomC `shouldBe` phantomCParse
             jsonParserForDef rPhantomD `shouldBe` phantomDParse
+       it "should produce the correct parse code for newtypes with record fields (issue #65)" $ do
+            jsonParserForDef rAPICity `shouldBe` apiCityParse

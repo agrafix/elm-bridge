@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-| This module defines how the derived Haskell data types are represented.
 - It is useful for writing type conversion rules.
 -}
@@ -119,15 +120,14 @@ unpackTupleType et = fromMaybe [et] (extract et)
 unpackToplevelConstr :: EType -> [EType]
 unpackToplevelConstr t =
     reverse $
-    flip unfoldr (Just t) $ \mT ->
-        case mT of
-          Nothing -> Nothing
-          Just t' ->
-              case t' of
-                ETyApp l r ->
-                    Just (r, Just l)
-                _ ->
-                    Just (t', Nothing)
+    flip unfoldr (Just t) $ \case
+        Nothing -> Nothing
+        Just t' ->
+            case t' of
+            ETyApp l r ->
+                Just (r, Just l)
+            _ ->
+                Just (t', Nothing)
 
 class IsElmDefinition a where
     compileElmDef :: Proxy a -> ETypeDef
@@ -179,7 +179,7 @@ toElmType ty = toElmType' $ typeRep ty
           | con == typeRepTyCon (typeRep (Proxy :: Proxy [])) &&
             args == [typeRep (Proxy :: Proxy Char)]  = ETyCon (ETCon "String")
             -- List is special because the constructor name is [] in Haskell and List in elm
-          | con == typeRepTyCon (typeRep (Proxy :: Proxy [])) = ETyApp (ETyCon $ ETCon "List") (toElmType' (head args))
+          | con == typeRepTyCon (typeRep (Proxy :: Proxy [])), (arg:_) <- args = ETyApp (ETyCon $ ETCon "List") (toElmType' arg)
             -- The unit type '()' is a 0-ary tuple.
           | isTuple $ tyConName con = foldl ETyApp (ETyTuple $ length args) $ map toElmType' args
           | otherwise = typeApplication con args
