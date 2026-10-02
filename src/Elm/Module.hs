@@ -108,6 +108,7 @@ newtypeAliases _ x = x
  * @Vector@ -> @List@
  * @Double@ -> @Float@
  * @Tagged t v@ -> @v@
+ * @Either a b@ -> @Result a b@
 -}
 defaultAlterations :: ETypeDef -> ETypeDef
 defaultAlterations = recAlterType defaultTypeAlterations
@@ -121,6 +122,7 @@ defaultTypeAlterations t = case t of
                             ETyApp (ETyCon (ETCon "IntMap")) v              -> checkMap int (defaultTypeAlterations v)
                             ETyApp (ETyApp (ETyCon (ETCon "Map")) k) v      -> checkMap (defaultTypeAlterations k) (defaultTypeAlterations v)
                             ETyApp (ETyApp (ETyCon (ETCon "Tagged")) _) v   -> defaultTypeAlterations v
+                            ETyApp (ETyApp (ETyCon (ETCon "Either")) l) r   -> ETyApp (ETyApp (tc "Result") (defaultTypeAlterations l)) (defaultTypeAlterations r)
                             ETyApp x y                                      -> ETyApp (defaultTypeAlterations x) (defaultTypeAlterations y)
                             ETyCon (ETCon "Integer")                        -> int
                             ETyCon (ETCon "Natural")                        -> int

@@ -70,6 +70,8 @@ jsonEncFoo  val =
    ]
 ```
 
+The default type conversion rules (see `Elm.Module.defaultAlterations`) convert Haskell types that do not exist in Elm. E.g. `Text` becomes `String`, `Map String v` becomes `Dict String v` and `Either a b` becomes `Result a b`.
+
 Also, there are functions `Elm.Json.stringSerForSimpleAdt` and `Elm.Json.stringParserForSimpleAdt` to generate functions for your non-JSON ADT types.
 
 For more usage examples check the tests or the examples dir.
