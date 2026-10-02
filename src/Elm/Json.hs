@@ -62,18 +62,25 @@ jsonParserForType' mh ty =
                 in "Json.Decode.map" ++ show tupleLen ++ " tuple" ++ show tupleLen ++ " "
                     ++ unwords (zipWith (\i t' -> "(Json.Decode.index " ++ show (i :: Int) ++ " (" ++ jsonParserForType t' ++ "))") [0..] xs)
 
-parseRecords :: String -> Bool -> Bool -> [(String, EType)] -> [String]
-parseRecords typename newtyping unwrap fields  =
+-- | How the decoded fields of a record are assembled into an Elm value.
+data RecordConstructor
+    = AliasConstructor String   -- ^ A @type alias@ for a record, which has its own constructor function
+    | NewtypeConstructor String -- ^ A custom type that wraps a record, e.g. @type T = T { .. }@
+    | AnonymousRecord           -- ^ A plain record, e.g. the fields of a sum type constructor
+
+parseRecords :: RecordConstructor -> Bool -> [(String, EType)] -> [String]
+parseRecords constructor unwrap fields  =
       case fields of
         [(_, ftype)] | unwrap -> [ succeed ++ " |> custom (" ++ jsonParserForType' (o ftype) ftype ++ ")" ]
         _ -> succeed : map mkField fields
     where
         succeed = "   Json.Decode.succeed " ++ constructorExpr
-        constructorExpr
-          | newtyping = "(\\" ++ unwords paramNames ++ " -> " ++ typename ++ " { " ++ intercalate ", " (map (\n -> n ++ " = p" ++ n) fieldNames) ++ " })"
-          | otherwise = typename
-        fieldNames = map fst fields
-        paramNames = map ("p" ++) fieldNames
+        constructorExpr = case constructor of
+          AliasConstructor typename   -> typename
+          NewtypeConstructor typename -> mkLambda (typename ++ " " ++ recordExpr)
+          AnonymousRecord             -> mkLambda recordExpr
+        mkLambda body = "(\\" ++ unwords (map (('p' :) . fst) fields) ++ " -> " ++ body ++ ")"
+        recordExpr = "{ " ++ intercalate ", " (map (\(fldName, _) -> fixReserved fldName ++ " = p" ++ fldName) fields) ++ " }"
         o fldType = if isOption fldType
                       then Root
                       else Leaf
@@ -102,7 +109,7 @@ jsonParserForDef etd =
       ETypeAlias (EAlias name fields _ newtyping unwrap) -> unlines
           ( decoderType name
           : (makeName name ++ " =")
-          : parseRecords (et_name name) newtyping unwrap fields
+          : parseRecords (if newtyping then NewtypeConstructor (et_name name) else AliasConstructor (et_name name)) unwrap fields
           )
       ETypeSum (ESum name opts (SumEncoding' encodingType) _ unarystring) ->
             decoderType name ++ "\n" ++
@@ -141,7 +148,7 @@ jsonParserForDef etd =
             mkDecoder cname (Named args)  =  lazy $ "Json.Decode.map "
                                          ++ cname
                                          ++ " ("
-                                         ++ unwords (parseRecords (et_name name) False False args)
+                                         ++ unwords (parseRecords AnonymousRecord False args)
                                          ++ ")"
 
             mkDecoder cname (Anonymous args) = lazy $ unwords ( decodeFunction
