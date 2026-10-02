@@ -62,6 +62,10 @@ newtype PhantomD a = PhantomD { getPhantomD :: Int }
 -- Regression test for issue #65: newtype with record field decoder was broken
 newtype APICity = APICity { cityName :: String }
 
+-- Fields whose names are reserved words in Elm get a trailing underscore
+newtype NTReserved = NTReserved { ntr_type :: String }
+data SumReserved = SumReserved { sr_type :: Int, sr_port :: Int } | SumOther Int
+
 $(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
 $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef (defaultOptionsDropLower 1) ''TestComp)
@@ -81,6 +85,8 @@ $(deriveElmDef defaultOptions ''PhantomB)
 $(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''PhantomC)
 $(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''PhantomD)
 $(deriveElmDef defaultOptions { unwrapUnaryRecords = False } ''APICity)
+$(deriveElmDef (defaultOptionsDropLower 4) { unwrapUnaryRecords = False } ''NTReserved)
+$(deriveElmDef (defaultOptionsDropLower 3) ''SumReserved)
 
 fooSer :: String
 fooSer = "jsonEncFoo : Foo -> Value\njsonEncFoo  val =\n   Json.Encode.object\n   [ (\"name\", Json.Encode.string val.name)\n   , (\"blablub\", Json.Encode.int val.blablub)\n   ]\n"
@@ -133,8 +139,8 @@ bazParse = unlines
     [ "jsonDecBaz : Json.Decode.Decoder a -> Json.Decode.Decoder ( Baz a )"
     , "jsonDecBaz localDecoder_a ="
     , "    let jsonDecDictBaz = Dict.fromList"
-    , "            [ (\"Baz1\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz1 (   Json.Decode.succeed Baz    |> required \"foo\" (Json.Decode.int)    |> required \"qux\" (jsonDecMap (Json.Decode.int) (localDecoder_a)))))"
-    , "            , (\"Baz2\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz2 (   Json.Decode.succeed Baz    |> fnullable \"bar\" (Json.Decode.int)    |> required \"str\" (Json.Decode.string))))"
+    , "            [ (\"Baz1\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz1 (   Json.Decode.succeed (\\pfoo pqux -> { foo = pfoo, qux = pqux })    |> required \"foo\" (Json.Decode.int)    |> required \"qux\" (jsonDecMap (Json.Decode.int) (localDecoder_a)))))"
+    , "            , (\"Baz2\", Json.Decode.lazy (\\_ -> Json.Decode.map Baz2 (   Json.Decode.succeed (\\pbar pstr -> { bar = pbar, str = pstr })    |> fnullable \"bar\" (Json.Decode.int)    |> required \"str\" (Json.Decode.string))))"
     , "            , (\"Testing\", Json.Decode.lazy (\\_ -> Json.Decode.map Testing (jsonDecBaz (localDecoder_a))))"
     , "            ]"
     , "    in  decodeSumObjectWithSingleField  \"Baz\" jsonDecDictBaz"
@@ -315,6 +321,25 @@ apiCityParse = unlines
   , "   |> required \"cityName\" (Json.Decode.string)"
   ]
 
+ntReservedParse :: String
+ntReservedParse = unlines
+  [ "jsonDecNTReserved : Json.Decode.Decoder ( NTReserved )"
+  , "jsonDecNTReserved ="
+  , "   Json.Decode.succeed (\\ptype -> NTReserved { type_ = ptype })"
+  , "   |> required \"type\" (Json.Decode.string)"
+  ]
+
+sumReservedParse :: String
+sumReservedParse = unlines
+  [ "jsonDecSumReserved : Json.Decode.Decoder ( SumReserved )"
+  , "jsonDecSumReserved ="
+  , "    let jsonDecDictSumReserved = Dict.fromList"
+  , "            [ (\"SumReserved\", Json.Decode.lazy (\\_ -> Json.Decode.map SumReserved (   Json.Decode.succeed (\\ptype pport -> { type_ = ptype, port_ = pport })    |> required \"type\" (Json.Decode.int)    |> required \"port\" (Json.Decode.int))))"
+  , "            , (\"SumOther\", Json.Decode.lazy (\\_ -> Json.Decode.map SumOther (Json.Decode.int)))"
+  , "            ]"
+  , "    in  decodeSumObjectWithSingleField  \"SumReserved\" jsonDecDictSumReserved"
+  ]
+
 spec :: Spec
 spec =
     describe "json serialisation" $
@@ -337,6 +362,8 @@ spec =
            rPhantomC = compileElmDef (Proxy :: Proxy (PhantomC a))
            rPhantomD = compileElmDef (Proxy :: Proxy (PhantomD a))
            rAPICity = compileElmDef (Proxy :: Proxy APICity)
+           rNTReserved = compileElmDef (Proxy :: Proxy NTReserved)
+           rSumReserved = compileElmDef (Proxy :: Proxy SumReserved)
        it "should produce the correct ser code" $ do
              jsonSerForDef rFoo `shouldBe` fooSer
              jsonSerForDef rBar `shouldBe` barSer
@@ -376,3 +403,6 @@ spec =
             jsonParserForDef rPhantomD `shouldBe` phantomDParse
        it "should produce the correct parse code for newtypes with record fields (issue #65)" $ do
             jsonParserForDef rAPICity `shouldBe` apiCityParse
+       it "should use valid Elm field names for reserved words in record decoders" $ do
+            jsonParserForDef rNTReserved `shouldBe` ntReservedParse
+            jsonParserForDef rSumReserved `shouldBe` sumReservedParse

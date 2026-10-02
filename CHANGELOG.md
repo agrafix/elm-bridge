@@ -1,3 +1,8 @@
+# Unreleased
+
+ * Fix decoders for sum type constructors with named fields. Since v0.8.5 they referenced the type name as a constructor, which does not compile in Elm.
+ * Fix decoders for newtypes and sum type constructors with fields whose names are Elm reserved words (e.g. `type`).
+
 # v0.8.3
 
  * Support Int32 and Int64, from domenkozar
