@@ -89,7 +89,7 @@ moduleCode' elmVersion = unlines
     , "jsonDecQux localDecoder_a ="
     , "    let jsonDecDictQux = Dict.fromList"
     , "            [ (\"Qux1\", Json.Decode.lazy (\\_ -> Json.Decode.map2 Qux1 (Json.Decode.index 0 (Json.Decode.int)) (Json.Decode.index 1 (Json.Decode.string))))"
-    , "            , (\"Qux2\", Json.Decode.lazy (\\_ -> Json.Decode.map Qux2 (   Json.Decode.succeed Qux    |> required \"a\" (Json.Decode.int)    |> required \"test\" (localDecoder_a))))"
+    , "            , (\"Qux2\", Json.Decode.lazy (\\_ -> Json.Decode.map Qux2 (   Json.Decode.succeed (\\pa ptest -> { a = pa, test = ptest })    |> required \"a\" (Json.Decode.int)    |> required \"test\" (localDecoder_a))))"
     , "            ]"
     , "    in  decodeSumObjectWithSingleField  \"Qux\" jsonDecDictQux"
     , ""
