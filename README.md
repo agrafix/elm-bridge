@@ -1,7 +1,7 @@
 Elm Bridge
 =====
 
-[![Build Status](https://travis-ci.org/agrafix/elm-bridge.svg)](https://travis-ci.org/agrafix/elm-bridge)
+[![CI](https://github.com/agrafix/elm-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/agrafix/elm-bridge/actions/workflows/ci.yml)
 
 [![Hackage Deps](https://img.shields.io/hackage-deps/v/elm-bridge.svg)](http://packdeps.haskellers.com/reverse/elm-bridge)
 
@@ -11,7 +11,7 @@ Hackage: [elm-bridge](http://hackage.haskell.org/package/elm-bridge)
 
 Building the bridge from [Haskell](http://haskell.org) to [Elm](http://elm-lang.org) and back. Define types once, use on both sides and enjoy easy (de)serialisation. Cheers!
 
-This version of the package only supports Elm 0.19. Version 0.5.2 supports Elm 0.18, and Version 0.3.0.2 supports Elm 0.16 and Elm 0.17.
+This version of the package only supports Elm 0.19. The generated code works with Elm 0.19.1 and Elm 0.19.2, and the end-to-end tests run on Elm 0.19.2. Version 0.5.2 supports Elm 0.18, and Version 0.3.0.2 supports Elm 0.16 and Elm 0.17.
 
 Note that the [bartavelle/json-helpers](http://package.elm-lang.org/packages/bartavelle/json-helpers/latest/) package, with version >= 1.2.0, is expected by the generated Elm modules.
 
@@ -90,5 +90,15 @@ or, for Elm 0.19:
 * `elm install bartavelle/json-helpers`
 
 ## Contribute
+
+To run the tests, you need `stack`, `node`, Elm 0.19.2 and `elm-test` 0.19.2:
+
+```sh
+stack test
+$(stack path --dist-dir)/build/end-to-end-tests/end-to-end-tests test/current-end-to-end/tests/MyTests.elm
+cd test/current-end-to-end && npx elm-test@0.19.2-1
+```
+
+The second command generates an Elm module with tests that decode and encode values that aeson produced. The third command compiles and runs these tests.
 
 Pull requests are welcome! Please consider creating an issue beforehand, so we can discuss what you would like to do. Code should be written in a consistent style throughout the project. Avoid whitespace that is sensible to conflicts. (E.g. alignment of `=` signs in functions definitions) Note that by sending a pull request you agree that your contribution can be released under the BSD3 License as part of the `elm-bridge` package or related packages.
