@@ -48,6 +48,9 @@ jsonParserForType' mh ty =
       ETyApp (ETyCon (ETCon "Set")) t' -> "decodeSet (" ++ jsonParserForType t' ++ ")"
       ETyApp (ETyApp (ETyCon (ETCon "Dict")) (ETyCon (ETCon "String")) ) value -> "Json.Decode.dict (" ++ jsonParserForType value ++ ")"
       ETyApp (ETyApp (ETyCon (ETCon "Dict")) key) value -> "decodeMap (" ++ jsonParserForType key ++ ") (" ++ jsonParserForType value ++ ")"
+      -- Haskell's Either, encoded by aeson as {"Left": x} or {"Right": y}
+      ETyApp (ETyApp (ETyCon (ETCon "Result")) err) ok ->
+          "decodeSumObjectWithSingleField \"Result\" (Dict.fromList [(\"Left\", Json.Decode.map Err (" ++ jsonParserForType err ++ ")), (\"Right\", Json.Decode.map Ok (" ++ jsonParserForType ok ++ "))])"
       _ ->
           case unpackTupleType ty of
             [] -> error $ "This should never happen. Failed to unpackTupleType: " ++ show ty
@@ -186,6 +189,21 @@ jsonSerForType' omitnull ns ty =
       ETyApp (ETyCon (ETCon "Set")) t' -> "(encodeSet " ++ jsonSerForType' omitnull ns t' ++ ")"
       ETyApp (ETyApp (ETyCon (ETCon "Dict")) (ETyCon (ETCon "String"))) value -> "(Json.Encode.dict identity (" ++ jsonSerForType' omitnull ns value ++ "))"
       ETyApp (ETyApp (ETyCon (ETCon "Dict")) key) value -> "(encodeMap (" ++ jsonSerForType' omitnull ns key ++ ") (" ++ jsonSerForType' omitnull ns value ++ "))"
+      -- Haskell's Either, encoded by aeson as {"Left": x} or {"Right": y}.
+      -- Elm has no single-line case expression, so the branches go on their
+      -- own lines. They are indented past any enclosing layout block, and
+      -- deeper for each nested Result, so that Elm parses them correctly.
+      ETyApp (ETyApp (ETyCon (ETCon "Result")) err) ok ->
+          let (n, rest) = case ns of
+                            (x:xs) -> (x, xs)
+                            []     -> error "jsonSerForType': ran out of variable names"
+              v = show n
+              indent = "\n" ++ replicate (24 + 4 * n) ' '
+              branch con var key t = indent ++ con ++ " " ++ var ++ " -> Json.Encode.object [(" ++ show key ++ ", " ++ jsonSerForType' omitnull rest t ++ " " ++ var ++ ")]"
+          in "(\\r" ++ v ++ " -> case r" ++ v ++ " of"
+             ++ branch "Err" ("e" ++ v) "Left" err
+             ++ branch "Ok" ("o" ++ v) "Right" ok
+             ++ ")"
       _ ->
           case unpackTupleType ty of
             [] -> error $ "This should never happen. Failed to unpackTupleType: " ++ show ty

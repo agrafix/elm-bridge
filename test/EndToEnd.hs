@@ -20,6 +20,7 @@ import           Test.QuickCheck.Gen       (Gen, oneof, sample')
 data Record1 a = Record1 { _r1foo :: Int, _r1bar :: Maybe Int, _r1baz :: a, _r1qux :: Maybe a, _r1jmap :: M.Map String Int } deriving Show
 data Record2 a = Record2 { _r2foo :: Int, _r2bar :: Maybe Int, _r2baz :: a, _r2qux :: Maybe a } deriving Show
 data RecordNestTuple a = RecordNestTuple (a, (a, a)) deriving Show
+data RecordEither a = RecordEither { _rEitherfoo :: Either Int a, _rEitherbar :: Either (Either Int Bool) [Int], _rEitherbaz :: Maybe (Either a Int), _rEitherqux :: [Either Int Int] } deriving Show
 
 data Sum01 a = Sum01A a | Sum01B (Maybe a) | Sum01C a a | Sum01D { _s01foo :: a } | Sum01E { _s01bar :: Int, _s01baz :: Int } deriving Show
 data Sum02 a = Sum02A a | Sum02B (Maybe a) | Sum02C a a | Sum02D { _s02foo :: a } | Sum02E { _s02bar :: Int, _s02baz :: Int } deriving Show
@@ -142,6 +143,10 @@ mkSumEncodeTest = mkEncodeTest "Sum" "_s"
 mkRecordEncodeTest :: (Show a, ToJSON a) => String -> [a] -> String
 mkRecordEncodeTest = mkEncodeTest "Record" "_r"
 
+-- | Haskell's Either is Elm's Result: rewrite the shown constructors
+eitherToResult :: String -> String
+eitherToResult = T.unpack . T.replace (T.pack "Left ") (T.pack "Err ") . T.replace (T.pack "Right ") (T.pack "Ok ") . T.pack
+
 mkSimpleRecordDecodeTest :: (Show a, ToJSON a) => String -> [a] -> String
 mkSimpleRecordDecodeTest = mkDecodeTest "SimpleRecord" "_s"
 
@@ -158,6 +163,7 @@ mkSimpleEncodeTest = mkEncodeTest "Simple" "_s"
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = False } ''Record1)
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 3, omitNothingFields = True  } ''Record2)
 $(deriveBoth defaultOptions ''RecordNestTuple)
+$(deriveBoth defaultOptions{ fieldLabelModifier = drop 8 } ''RecordEither)
 
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = False, allNullaryToStringTag = False, sumEncoding = TaggedObject "tag" "content" } ''Sum01)
 $(deriveBoth defaultOptions{ fieldLabelModifier = drop 4, omitNothingFields = True , allNullaryToStringTag = False, sumEncoding = TaggedObject "tag" "content" } ''Sum02)
@@ -208,6 +214,8 @@ arb c1 c2 c3 c4 c5 = oneof
     , c5 <$> arbitrary <*> arbitrary
     ]
 
+instance Arbitrary a => Arbitrary (RecordEither a) where
+    arbitrary = RecordEither <$> arbitrary <*> arbitrary <*> fmap Just arbitrary <*> arbitrary
 instance Arbitrary a => Arbitrary (RecordNestTuple a) where
   arbitrary = (\x y z -> RecordNestTuple (x, (y, z))) <$> arbitrary <*> arbitrary <*> arbitrary
 instance Arbitrary a => Arbitrary (Sum01 a) where arbitrary = arb Sum01A Sum01B Sum01C Sum01D Sum01E
@@ -357,10 +365,11 @@ elmModuleContent = unlines
     , "    in equal (remix a) (remix b)"
     , ""
     , ""
-    , makeModuleContentWithAlterations (newtypeAliases ["Record1", "Record2", "SimpleRecord01", "SimpleRecord02", "SimpleRecord03", "SimpleRecord04"] . defaultAlterations)
+    , makeModuleContentWithAlterations (newtypeAliases ["Record1", "Record2", "RecordEither", "SimpleRecord01", "SimpleRecord02", "SimpleRecord03", "SimpleRecord04"] . defaultAlterations)
         [ DefineElm (Proxy :: Proxy (Record1 a))
         , DefineElm (Proxy :: Proxy (Record2 a))
         , DefineElm (Proxy :: Proxy (RecordNestTuple a))
+        , DefineElm (Proxy :: Proxy (RecordEither a))
         , DefineElm (Proxy :: Proxy (Sum01 a))
         , DefineElm (Proxy :: Proxy (Sum02 a))
         , DefineElm (Proxy :: Proxy (Sum03 a))
@@ -408,6 +417,7 @@ main = do
     re01 <- sample' arbitrary :: IO [Record1 [Int]]
     re02 <- sample' arbitrary :: IO [Record2 [Int]]
     rent <- sample' arbitrary :: IO [RecordNestTuple [Int]]
+    reei <- sample' arbitrary :: IO [RecordEither [Int]]
     sp01 <- sample' arbitrary :: IO [Simple01 [Int]]
     sp02 <- sample' arbitrary :: IO [Simple02 [Int]]
     sp03 <- sample' arbitrary :: IO [Simple03 [Int]]
@@ -457,6 +467,8 @@ main = do
                        , mkRecordEncodeTest "2" re02
                        , mkRecordDecodeTest "NestTuple" rent
                        , mkRecordEncodeTest "NestTuple" rent
+                       , eitherToResult (mkRecordDecodeTest "Either" reei)
+                       , eitherToResult (mkRecordEncodeTest "Either" reei)
                        , mkSimpleEncodeTest "01" sp01
                        , mkSimpleEncodeTest "02" sp02
                        , mkSimpleEncodeTest "03" sp03

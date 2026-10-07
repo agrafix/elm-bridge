@@ -3,6 +3,7 @@ module Elm.JsonSpec (spec) where
 
 import           Elm.Derive
 import           Elm.Json
+import           Elm.Module       (defaultAlterations)
 import           Elm.TyRender
 import           Elm.TyRep
 
@@ -62,7 +63,11 @@ newtype PhantomD a = PhantomD { getPhantomD :: Int }
 -- Regression test for issue #65: newtype with record field decoder was broken
 newtype APICity = APICity { cityName :: String }
 
+-- Regression test for issue #63: Either is not an Elm type
+data WithEither = WithEither { we_result :: Either String Int }
+
 $(deriveElmDef (defaultOptionsDropLower 2) ''Foo)
+$(deriveElmDef (defaultOptionsDropLower 3) ''WithEither)
 $(deriveElmDef (defaultOptionsDropLower 2) ''Bar)
 $(deriveElmDef (defaultOptionsDropLower 1) ''TestComp)
 $(deriveElmDef defaultOptions ''SomeOpts)
@@ -315,6 +320,29 @@ apiCityParse = unlines
   , "   |> required \"cityName\" (Json.Decode.string)"
   ]
 
+withEitherType :: String
+withEitherType = unlines
+  [ "type alias WithEither  ="
+  , "   { result: (Result String Int)"
+  , "   }"
+  ]
+
+withEitherParse :: String
+withEitherParse = unlines
+  [ "jsonDecWithEither : Json.Decode.Decoder ( WithEither )"
+  , "jsonDecWithEither ="
+  , "   Json.Decode.succeed WithEither |> custom (decodeSumObjectWithSingleField \"Result\" (Dict.fromList [(\"Left\", Json.Decode.map Err (Json.Decode.string)), (\"Right\", Json.Decode.map Ok (Json.Decode.int))]))"
+  ]
+
+withEitherSer :: String
+withEitherSer = init $ unlines
+  [ "jsonEncWithEither : WithEither -> Value"
+  , "jsonEncWithEither  val ="
+  , "   (\\r1 -> case r1 of"
+  , "                            Err e1 -> Json.Encode.object [(\"Left\", Json.Encode.string e1)]"
+  , "                            Ok o1 -> Json.Encode.object [(\"Right\", Json.Encode.int o1)]) val.result"
+  ]
+
 spec :: Spec
 spec =
     describe "json serialisation" $
@@ -337,6 +365,7 @@ spec =
            rPhantomC = compileElmDef (Proxy :: Proxy (PhantomC a))
            rPhantomD = compileElmDef (Proxy :: Proxy (PhantomD a))
            rAPICity = compileElmDef (Proxy :: Proxy APICity)
+           rWithEither = defaultAlterations (compileElmDef (Proxy :: Proxy WithEither))
        it "should produce the correct ser code" $ do
              jsonSerForDef rFoo `shouldBe` fooSer
              jsonSerForDef rBar `shouldBe` barSer
@@ -376,3 +405,7 @@ spec =
             jsonParserForDef rPhantomD `shouldBe` phantomDParse
        it "should produce the correct parse code for newtypes with record fields (issue #65)" $ do
             jsonParserForDef rAPICity `shouldBe` apiCityParse
+       it "should map Either to Result (issue #63)" $ do
+            renderElm rWithEither `shouldBe` withEitherType
+            jsonParserForDef rWithEither `shouldBe` withEitherParse
+            jsonSerForDef rWithEither `shouldBe` withEitherSer

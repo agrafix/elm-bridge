@@ -1,3 +1,7 @@
+# Unreleased
+
+ * `Either a b` is now generated as Elm's `Result a b` by `defaultAlterations`, with JSON decoders and encoders that match aeson's `{"Left": ..}` / `{"Right": ..}` encoding (#63).
+
 # v0.8.3
 
  * Support Int32 and Int64, from domenkozar
