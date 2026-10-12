@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.10.3"
+          enable-stack: true
+          stack-no-global: true
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.stack
+          key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml', 'elm-bridge.cabal') }}
+
+      - name: Run the Haskell tests
+        run: stack test
+
+      # The end-to-end test suite generates an Elm module with tests that
+      # decode and encode values that aeson produced.
+      - name: Generate the Elm end-to-end tests
+        run: "$(stack path --dist-dir)/build/end-to-end-tests/end-to-end-tests" test/current-end-to-end/tests/MyTests.elm
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run the Elm end-to-end tests with Elm 0.19.2
+        working-directory: test/current-end-to-end
+        run: |
+          npm install --global elm@0.19.2-0 elm-test@0.19.2-1
+          elm-test
